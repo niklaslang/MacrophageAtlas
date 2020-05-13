@@ -120,7 +120,8 @@ QC.histograms.before[[3]] + QC.histograms.after[[3]]
 ### normalisation ###
 lung <- NormalizeData(lung, normalization.method = "LogNormalize", scale.factor = 10000)
 
-# feature selection: selecting the most highly variable genes
+### feature selection ###
+# selecting the most highly variable genes
 lung <- FindVariableFeatures(lung, selection.method = "vst", nfeatures = 2000)
 
 # 10 most highly variable genes
@@ -131,10 +132,29 @@ HVGs.plot <- VariableFeaturePlot(lung)
 HVGs.plot <- LabelPoints(plot = HVGs.plot, points = top10, repel = TRUE)
 HVGs.plot
 
-# scale data
+### scale data ###
 all.genes <- rownames(lung)
 lung <- ScaleData(lung, features = all.genes)
 
-# dimensionality reduction: PCA
+### dimensionality reduction: PCA ###
 lung <- RunPCA(lung, features = VariableFeatures(object = lung))
+
+# exploring PCA results
+VizDimLoadings(lung, dims = 1:2, reduction = "pca")
+DimPlot(lung, reduction = "pca")
+for(i in 1:7){
+  lower_limit <- 3*i - 2
+  upper_limit <- 3*i
+  DimHeatmap(lung, dims = lower_limit:upper_limit, cells = 500, balanced = TRUE)
+}
+
+## jackstraw ##
+lung <- JackStraw(lung, num.replicate = 100)
+lung <- ScoreJackStraw(lung, dims = 1:20)
+
+## jackstaw plot ##
+JackStrawPlot(lung, dims = 1:15)
+
+## elbow plot ##
+ElbowPlot(lung)
 
