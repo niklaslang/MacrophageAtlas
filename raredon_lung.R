@@ -160,9 +160,9 @@ ElbowPlot(lung)
 
 ### clustering ###
 
-# dims = 10, vary resolution
+# dims = 15, vary resolution
 lung <- FindNeighbors(lung, dims = 1:15)
-lung <- FindClusters(lung, resolution = 0.5)
+lung <- FindClusters(lung, resolution = 2.0)
 
 ### visualisation ###
 ## UMAP ##
@@ -170,7 +170,39 @@ lung <- RunUMAP(lung, dims = 1:15)
 DimPlot(lung, reduction = "umap")
 
 ## tSNE ##
-lung <- RunTSNE(object = lung, dims = 1:15)
-# note that you can set do.label=T to help label individual clusters
+lung <- RunTSNE(lung, dims = 1:15)
 DimPlot(object = lung, reduction = "tsne")
+
+### save data ###
+saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+
+### read data ###
+lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+
+### find cluster marker genes ###
+# find markers for every cluster compared to all remaining cells, report only the positive ones
+lung.markers <- FindAllMarkers(lung, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+lung.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
+
+# plot macrophage marker genes
+macrophage.markers <- list("CSF1R", "LYZ", "CD68", "HLA-DRA", "ITGAX", "ITGAM")
+marker.vln.1 <- VlnPlot(lung, features = macrophage.markers[1])
+marker.vln.2 <- VlnPlot(lung, features = macrophage.markers[2])
+marker.vln.3 <- VlnPlot(lung, features = c("CD68"), slot = "counts", log = TRUE)
+marker.vln.3 <- VlnPlot(lung, features = macrophage.markers[4])
+marker.vln.4 <- VlnPlot(lung, features = macrophage.markers[5])
+
+# plot violins
+marker.vln.1 + marker.vln.2
+marker.vln.3 + marker.vln.4
+
+# feature plot
+FeaturePlot(lung, features = macrophage.markers[c(-3,-6)])
+
+# heat map
+top10 <- lung.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+DoHeatmap(lung, features = top10$gene) + NoLegend()
+
+### save file ###
+saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_final.rds")
 
