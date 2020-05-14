@@ -153,8 +153,24 @@ lung <- JackStraw(lung, num.replicate = 100)
 lung <- ScoreJackStraw(lung, dims = 1:20)
 
 ## jackstaw plot ##
-JackStrawPlot(lung, dims = 1:15)
+JackStrawPlot(lung, dims = 1:20)
 
 ## elbow plot ##
 ElbowPlot(lung)
+
+### clustering ###
+
+# dims = 10, vary resolution
+lung <- FindNeighbors(lung, dims = 1:15)
+lung <- FindClusters(lung, resolution = 0.5)
+
+### visualisation ###
+## UMAP ##
+lung <- RunUMAP(lung, dims = 1:15)
+DimPlot(lung, reduction = "umap")
+
+## tSNE ##
+lung <- RunTSNE(object = lung, dims = 1:15)
+# note that you can set do.label=T to help label individual clusters
+DimPlot(object = lung, reduction = "tsne")
 
