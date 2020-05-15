@@ -134,7 +134,7 @@ HVGs.plot
 
 ### scale data ###
 all.genes <- rownames(lung)
-lung <- ScaleData(lung, features = all.genes)
+lung <- ScaleData(lung, features = all.genes, vars.to.regress = "percent.mt")
 
 ### dimensionality reduction: PCA ###
 lung <- RunPCA(lung, features = VariableFeatures(object = lung))
