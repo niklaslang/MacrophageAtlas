@@ -6,116 +6,7 @@ library(umap)
 library(reticulate)
 
 ### load lung data ###
-lung.data.dir <- c("/home/s1987963/processed_data/raredon_lung/healthy/GSM3926545_Hum1/", "/home/s1987963/processed_data/raredon_lung/healthy/GSM3926546_Hum2/")
-lung.data <- Read10X(data.dir = lung.data.dir)
-
-# initialize the Seurat object
-lung <- CreateSeuratObject(counts = lung.data, project = "lung_raredon", min.cells = 3, min.features = 200)
-
-### QC ###
-
-## Calculate missing metrics ##
-# compute fraction of mitochondrial gene counts
-lung[["percent.mt"]] <- PercentageFeatureSet(lung, pattern = "^MT-")
-
-## QC plots before filtering ##
-
-# violin plots
-QC.violin <- function(data){
-  violin.plots <- VlnPlot(data, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
-  return(violin.plots)
-}
-QC.violin.before <- QC.violin(lung)
-QC.violin.before
-
-#plot1 <- VlnPlot(lung, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
-#plot1
-
-# scatter plots
-QC.scatter <- function(data){
-  scatter.plots <- list()
-  scatter1 <- FeatureScatter(data, feature1 = "nCount_RNA", feature2 = "percent.mt")
-  scatter.plots[[1]] <- scatter1
-  scatter2 <- FeatureScatter(data, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
-  scatter.plots[[2]] <- scatter2
-  return(scatter.plots)
-}
-QC.scatter.before <- QC.scatter(lung)
-QC.scatter.before[[1]] + QC.scatter.before[[2]]
-
-#plot2 <- FeatureScatter(lung, feature1 = "nCount_RNA", feature2 = "percent.mt")
-#plot3 <- FeatureScatter(lung, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
-#plot2 + plot3
-
-# histograms
-
-QC.histograms <- function(data){
-  histograms <- list()
-  
-  # distribution of genes per cell
-  hist1 <- qplot(x =data[["nFeature_RNA"]]$nFeature_RNA , fill=..count.., geom="histogram", binwidth = 100,
-                 xlab = "Genes",
-                 ylab = "Frequency",
-                 main = "Genes per cell")+scale_fill_gradient(low="lightblue", high="darkblue")
-  histograms[[1]] <- hist1
-  
-  # distribution of count depth
-  hist2 <- qplot(x =data[["nCount_RNA"]]$nCount_RNA, fill=..count.., geom="histogram", binwidth = 1000,
-                 xlab = "Count depth",
-                 ylab = "Frequency",
-                 main = "Count depth per cell")+scale_fill_gradient(low="orange", high="red")
-  histograms[[2]] <- hist2
-  
-  # distribution of mitochondrial gene fraction
-  hist3 <- qplot(x =data[["percent.mt"]]$percent.mt, fill=..count.., geom="histogram", binwidth = 0.1,
-                    xlab = "Fraction Mitochondrial Counts",
-                    ylab = "Frequency",
-                    main = "Mitochondrial Reads Fraction")+scale_fill_gradient(low="lightgreen", high="darkgreen")
-  histograms[[3]] <- hist3
-  return(histograms)
-}
-QC.histograms.before <- QC.histograms(lung)
-QC.histograms.before[[1]]+QC.histograms.before[[2]]+QC.histograms.before[[3]]
-
-## distribution of count depth
-#plot4 <- qplot(x =lung[["nCount_RNA"]]$nCount_RNA, fill=..count.., geom="histogram", binwidth = 250,
-#               xlab = "Count depth",
-#               ylab = "Frequency",
-#               main = "Count depth per cell")+scale_fill_gradient(low="blue", high="red")
-#
-## distribution of mitochondrial gene fraction
-#plot5 <- qplot(x =lung[["percent.mt"]]$percent.mt, fill=..count.., geom="histogram", binwidth = 0.1,
-#          xlab = "Fraction Mitochondrial Counts",
-#          ylab = "Frequency",
-#          main = "Mitochondrial Reads Fraction")+scale_fill_gradient(low="yellow", high="green")
-#plot4 + plot5
-
-## QC plots with proposed cutoff ##
-# plot cut-offs
-QC.hist1.cutoff <- QC.histograms(lung)[[1]] + geom_vline(aes(xintercept=7500),color="black", linetype="dashed", size=.5) + geom_vline(aes(xintercept=200),color="black", linetype="dashed", size=.5)
-QC.hist2.cutoff <- QC.histograms(lung)[[2]] + geom_vline(aes(xintercept=500),color="black", linetype="dashed", size=.5)
-QC.hist3.cutoff <- QC.histograms(lung)[[3]] + geom_vline(aes(xintercept=7),color="black", linetype="dashed", size=.5)
-QC.hist1.cutoff + QC.hist2.cutoff + QC.hist3.cutoff
-
-## filter cells ##
-lung <- subset(lung, subset = nFeature_RNA > 200)
-
-## QC plots after filtering ##
-
-# violin plots
-QC.violin.after <- QC.violin(lung)
-QC.violin.before / QC.violin.after
-
-# scatter plots
-QC.scatter.after <- QC.scatter(lung)
-QC.scatter.before[[1]] + QC.scatter.after[[1]]
-QC.scatter.before[[2]] + QC.scatter.after[[2]]
-
-# histograms
-QC.histograms.after <- QC.histograms(lung)
-QC.histograms.before[[1]] + QC.histograms.after[[1]]
-QC.histograms.before[[2]] + QC.histograms.after[[2]]
-QC.histograms.before[[3]] + QC.histograms.after[[3]]
+lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
 
 ### normalisation ###
 lung <- NormalizeData(lung, normalization.method = "LogNormalize", scale.factor = 10000)
@@ -133,51 +24,52 @@ HVGs.plot <- LabelPoints(plot = HVGs.plot, points = top10, repel = TRUE)
 HVGs.plot
 
 ### scale data ###
-all.genes <- rownames(lung)
-lung <- ScaleData(lung, features = all.genes, vars.to.regress = "percent.mt")
+lung <- ScaleData(lung, vars.to.regress = "percent.mt")
 
 ### dimensionality reduction: PCA ###
 lung <- RunPCA(lung, features = VariableFeatures(object = lung))
 
-# exploring PCA results
+## explore PCA results ##
+# genes making up the first 15 PCs
+print(lung[["pca"]], dims = 1:15, nfeatures = 5)
+
+# plot genes making PC1 and PC2
 VizDimLoadings(lung, dims = 1:2, reduction = "pca")
+
+# plot PC1 against PC2
 DimPlot(lung, reduction = "pca")
-for(i in 1:7){
-  lower_limit <- 3*i - 2
-  upper_limit <- 3*i
-  DimHeatmap(lung, dims = lower_limit:upper_limit, cells = 500, balanced = TRUE)
+
+# PC heatmap
+for(i in 1:4){
+  lower_limit <- 1+(6*(i-1))
+  upper_limit <- 6*i
+  DimHeatmap(lung, dims = lower_limit:upper_limit, nfeatures = 20, cells = 500, balanced = TRUE)
 }
 
-## jackstraw ##
-lung <- JackStraw(lung, num.replicate = 100)
-lung <- ScoreJackStraw(lung, dims = 1:20)
-
-## jackstaw plot ##
-JackStrawPlot(lung, dims = 1:20)
-
 ## elbow plot ##
-ElbowPlot(lung)
+ElbowPlot(lung, ndims = 50)
 
 ### clustering ###
-
 # dims = 15, vary resolution
 lung <- FindNeighbors(lung, dims = 1:15)
-lung <- FindClusters(lung, resolution = 2.0)
+lung <- FindClusters(lung, resolution = 0.5)
 
 ### visualisation ###
 ## UMAP ##
 lung <- RunUMAP(lung, dims = 1:15)
-DimPlot(lung, reduction = "umap")
+UMAPPlot(lung, reduction = "umap")
+UMAPPlot(lung, reduction = "umap", group.by = "orig.ident")
 
 ## tSNE ##
 lung <- RunTSNE(lung, dims = 1:15)
-DimPlot(object = lung, reduction = "tsne")
+TSNEPlot(lung, reduction = "tsne")
+TSNEPlot(lung, reduction = "tsne", group.by = "orig.ident")
 
 ### save data ###
-saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
 
 ### read data ###
-lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
 
 ### find cluster marker genes ###
 # find markers for every cluster compared to all remaining cells, report only the positive ones
@@ -185,12 +77,33 @@ lung.markers <- FindAllMarkers(lung, only.pos = TRUE, min.pct = 0.25, logfc.thre
 lung.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
 
 # plot macrophage marker genes
-macrophage.markers <- list("CSF1R", "LYZ", "CD68", "HLA-DRA", "ITGAX", "ITGAM")
+MNP.markers <- list("CSF1R", "LYZ",  "CD68","HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1", # macrophage marker
+                    "CD14", "MNDA", # monocyte + macrophage marker
+                    "S100A8","S100A9", # monocyte marker
+                    "LILRA4","CD1C","XCR1", "CD86" # DC marker
+                    )
+
+### save data ###
+saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
+
+# dot plot
+DotPlot(lung, features = MNP.markers, split.by = "seurat_clusters") + RotatedAxis()
 marker.vln.1 <- VlnPlot(lung, features = macrophage.markers[1])
 marker.vln.2 <- VlnPlot(lung, features = macrophage.markers[2])
-marker.vln.3 <- VlnPlot(lung, features = c("CD68"), slot = "counts", log = TRUE)
-marker.vln.3 <- VlnPlot(lung, features = macrophage.markers[4])
-marker.vln.4 <- VlnPlot(lung, features = macrophage.markers[5])
+marker.vln.3 <- VlnPlot(lung, features = macrophage.markers[3])
+marker.vln.4 <- VlnPlot(lung, features = macrophage.markers[4])
+marker.vln.5 <- VlnPlot(lung, features = macrophage.markers[5])
+marker.vln.6 <- VlnPlot(lung, features = macrophage.markers[6])
+marker.vln.7 <- VlnPlot(lung, features = macrophage.markers[7])
+marker.vln.8 <- VlnPlot(lung, features = macrophage.markers[8])
+marker.vln.9 <- VlnPlot(lung, features = macrophage.markers[9])
+marker.vln.10 <- VlnPlot(lung, features = macrophage.markers[10])
+marker.vln.11 <- VlnPlot(lung, features = macrophage.markers[11])
+marker.vln.12 <- VlnPlot(lung, features = macrophage.markers[12])
+marker.vln.13 <- VlnPlot(lung, features = macrophage.markers[13])
+marker.vln.14 <- VlnPlot(lung, features = macrophage.markers[14])
+marker.vln.15 <- VlnPlot(lung, features = macrophage.markers[15])
+marker.vln.16 <- VlnPlot(lung, features = macrophage.markers[16])
 
 # plot violins
 marker.vln.1 + marker.vln.2
