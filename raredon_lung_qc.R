@@ -4,6 +4,7 @@ library(Seurat)
 library(patchwork)
 library(umap)
 library(reticulate)
+library(SoupX)
 
 ### load lung data ###
 lung.data.dir <- "/home/s1987963/processed_data/raredon_lung/healthy/"
@@ -112,5 +113,3 @@ QC.histograms.before <- QC.histograms(lung.all)
 QC.histograms.before[[1]]+QC.histograms.before[[2]]+QC.histograms.before[[3]]
 
 ### conclusion ###
-
-
