@@ -24,7 +24,7 @@ HVGs.plot <- LabelPoints(plot = HVGs.plot, points = top10, repel = TRUE)
 HVGs.plot
 
 ### scale data ###
-lung <- ScaleData(lung, vars.to.regress = "percent.mt")
+lung <- ScaleData(lung, features = rownames(lung), vars.to.regress = "percent.mt")
 
 ### dimensionality reduction: PCA ###
 lung <- RunPCA(lung, features = VariableFeatures(object = lung))
@@ -57,13 +57,13 @@ lung <- FindClusters(lung, resolution = 0.5)
 ### visualisation ###
 ## UMAP ##
 lung <- RunUMAP(lung, dims = 1:15)
-UMAPPlot(lung, reduction = "umap")
-UMAPPlot(lung, reduction = "umap", group.by = "orig.ident")
+DimPlot(lung, reduction = "umap")
+DimPlot(lung, reduction = "umap", group.by = "orig.ident")
 
 ## tSNE ##
 lung <- RunTSNE(lung, dims = 1:15)
-TSNEPlot(lung, reduction = "tsne")
-TSNEPlot(lung, reduction = "tsne", group.by = "orig.ident")
+DimPlot(lung, reduction = "tsne")
+DimPlot(lung, reduction = "tsne", group.by = "orig.ident")
 
 ### save data ###
 saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
@@ -76,45 +76,22 @@ lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
 lung.markers <- FindAllMarkers(lung, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
 lung.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
 
-# plot macrophage marker genes
-MNP.markers <- list("CSF1R", "LYZ",  "CD68","HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1", # macrophage marker
-                    "CD14", "MNDA", # monocyte + macrophage marker
-                    "S100A8","S100A9", # monocyte marker
-                    "LILRA4","CD1C","XCR1", "CD86" # DC marker
-                    )
-
-### save data ###
-saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
+## marker genes ##
+# all MNP markers
+MNP.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1","CD14", "MNDA",
+               "S100A8","S100A9", "CD1C","XCR1", "CD86" )
+# macrophage markers
+macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1")
+# monocyte markers
+monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
+# dendritic cell markers
+dc.genes <- c("CD1C","XCR1", "CD86")
 
 # dot plot
-DotPlot(lung, features = MNP.markers, split.by = "seurat_clusters") + RotatedAxis()
-marker.vln.1 <- VlnPlot(lung, features = macrophage.markers[1])
-marker.vln.2 <- VlnPlot(lung, features = macrophage.markers[2])
-marker.vln.3 <- VlnPlot(lung, features = macrophage.markers[3])
-marker.vln.4 <- VlnPlot(lung, features = macrophage.markers[4])
-marker.vln.5 <- VlnPlot(lung, features = macrophage.markers[5])
-marker.vln.6 <- VlnPlot(lung, features = macrophage.markers[6])
-marker.vln.7 <- VlnPlot(lung, features = macrophage.markers[7])
-marker.vln.8 <- VlnPlot(lung, features = macrophage.markers[8])
-marker.vln.9 <- VlnPlot(lung, features = macrophage.markers[9])
-marker.vln.10 <- VlnPlot(lung, features = macrophage.markers[10])
-marker.vln.11 <- VlnPlot(lung, features = macrophage.markers[11])
-marker.vln.12 <- VlnPlot(lung, features = macrophage.markers[12])
-marker.vln.13 <- VlnPlot(lung, features = macrophage.markers[13])
-marker.vln.14 <- VlnPlot(lung, features = macrophage.markers[14])
-marker.vln.15 <- VlnPlot(lung, features = macrophage.markers[15])
-marker.vln.16 <- VlnPlot(lung, features = macrophage.markers[16])
-
-# plot violins
-marker.vln.1 + marker.vln.2
-marker.vln.3 + marker.vln.4
+DotPlot(lung, features = MNP.genes) + RotatedAxis()
 
 # feature plot
-FeaturePlot(lung, features = macrophage.markers[c(-3,-6)])
-
-# heat map
-top10 <- lung.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
-DoHeatmap(lung, features = top10$gene) + NoLegend()
+FeaturePlot(lung, features = MNP.genes)
 
 ### save file ###
 saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_final.rds")
