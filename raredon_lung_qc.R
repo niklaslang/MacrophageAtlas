@@ -1,10 +1,10 @@
-library(dplyr)
-library(ggplot2)
 library(Seurat)
-library(patchwork)
+library(SoupX)
+library(dplyr)
 library(umap)
 library(reticulate)
-library(SoupX)
+library(ggplot2)
+library(patchwork)
 
 ### load lung data ###
 lung.data.dir <- "/home/s1987963/processed_data/raredon_lung/healthy/"
@@ -43,10 +43,10 @@ lung.all <- merge(lung.patient01, c(lung.patient02, lung.patient03, lung.patient
                                    lung.patient11, lung.patient12, lung.patient13,
                                    lung.patient14))
 ### save merged data ###
-saveRDS(lung.all, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
+saveRDS(lung.all, file = "/home/s1987963/MacrophageAtlas/raredon_lung.rds")
 
 ### read data ###
-lung.all <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
+lung.all <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
 
 ### QC metrics ###
 ## QC at patient level ##
