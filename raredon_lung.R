@@ -49,32 +49,24 @@ for(i in 1:4){
 ## elbow plot ##
 ElbowPlot(lung, ndims = 50)
 
+### save data ###
+saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_pca.rds")
+
 ### clustering ###
 # evaluate different numbers of PCs and resolutions
-dims <- c(6,7,9,10,13,14)
-res <- seq(0,1,0.1)
+dims <- c(7,10,11,13,14)
+res <- seq(0.2,1.2,0.1)
 
 for(d in dims){
   lung <- RunUMAP(lung, dims=1:d, seed.use=1)
   for (r in res) {
-    lung <- FindNeighbors(lung, dims=1:d)
-    lung <- FindClusters(lung, resolution=r)
-    umap.plot <- DimPlot(lung, reduction="umap", pt.size=0.9, label = F )
-    print(umap.plot)
+    lung <- FindNeighbors(lung, dims = 1:d)
+    lung <- FindClusters(lung, resolution = r)
+    umap.plot <- DimPlot(lung, reduction = "umap", label = F)
+    batch.plot <- DimPlot(lung, reduction = "umap", group.by = "orig.ident")
+    eval(parse(text=paste0("UMAP_dim", d, "_res", r, " <- umap.plot + batch.plot")))
   }
 }
-
-
-### visualisation ###
-## UMAP ##
-lung <- RunUMAP(lung, dims = 1:10)
-DimPlot(lung, reduction = "umap")
-DimPlot(lung, reduction = "umap", group.by = "orig.ident")
-
-## tSNE ##
-lung <- RunTSNE(lung, dims = 1:10)
-DimPlot(lung, reduction = "tsne")
-DimPlot(lung, reduction = "tsne", group.by = "orig.ident")
 
 ### save data ###
 saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
