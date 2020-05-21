@@ -1,12 +1,12 @@
-library(dplyr)
-library(ggplot2)
 library(Seurat)
-library(patchwork)
 library(umap)
 library(reticulate)
+library(dplyr)
+library(ggplot2)
+library(patchwork)
 
 ### load lung data ###
-lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
+lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
 
 ### normalisation ###
 lung <- NormalizeData(lung, normalization.method = "LogNormalize", scale.factor = 10000)
@@ -24,7 +24,7 @@ HVGs.plot <- LabelPoints(plot = HVGs.plot, points = top10, repel = TRUE)
 HVGs.plot
 
 ### scale data ###
-lung <- ScaleData(lung, features = rownames(lung), vars.to.regress = "percent.mt")
+lung <- ScaleData(lung, vars.to.regress = "nFeature_RNA")
 
 ### dimensionality reduction: PCA ###
 lung <- RunPCA(lung, features = VariableFeatures(object = lung))
@@ -50,18 +50,29 @@ for(i in 1:4){
 ElbowPlot(lung, ndims = 50)
 
 ### clustering ###
-# dims = 15, vary resolution
-lung <- FindNeighbors(lung, dims = 1:15)
-lung <- FindClusters(lung, resolution = 0.5)
+# evaluate different numbers of PCs and resolutions
+dims <- c(6,7,9,10,13,14)
+res <- seq(0,1,0.1)
+
+for(d in dims){
+  lung <- RunUMAP(lung, dims=1:d, seed.use=1)
+  for (r in res) {
+    lung <- FindNeighbors(lung, dims=1:d)
+    lung <- FindClusters(lung, resolution=r)
+    umap.plot <- DimPlot(lung, reduction="umap", pt.size=0.9, label = F )
+    print(umap.plot)
+  }
+}
+
 
 ### visualisation ###
 ## UMAP ##
-lung <- RunUMAP(lung, dims = 1:15)
+lung <- RunUMAP(lung, dims = 1:10)
 DimPlot(lung, reduction = "umap")
 DimPlot(lung, reduction = "umap", group.by = "orig.ident")
 
 ## tSNE ##
-lung <- RunTSNE(lung, dims = 1:15)
+lung <- RunTSNE(lung, dims = 1:10)
 DimPlot(lung, reduction = "tsne")
 DimPlot(lung, reduction = "tsne", group.by = "orig.ident")
 
