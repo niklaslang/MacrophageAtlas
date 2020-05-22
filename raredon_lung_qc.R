@@ -42,8 +42,20 @@ lung.all <- merge(lung.patient01, c(lung.patient02, lung.patient03, lung.patient
                                    lung.patient08, lung.patient09, lung.patient10,
                                    lung.patient11, lung.patient12, lung.patient13,
                                    lung.patient14))
+
+lung.11 <- merge(lung.patient03, c(lung.patient04, lung.patient05, lung.patient07,
+                                   lung.patient08, lung.patient09, lung.patient10,
+                                   lung.patient11, lung.patient12, lung.patient13, 
+                                   lung.patient14))
+
+lung.9 <- merge(lung.patient04, c(lung.patient05, lung.patient07, lung.patient08, 
+                                    lung.patient09, lung.patient11, lung.patient13, 
+                                    lung.patient14))
 ### save merged data ###
-saveRDS(lung.all, file = "/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+saveRDS(lung.all, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
+saveRDS(lung.11, file = "/home/s1987963/MacrophageAtlas/raredon_lung_11.rds")
+saveRDS(lung.9, file = "/home/s1987963/MacrophageAtlas/raredon_lung_9.rds")
+
 
 ### read data ###
 lung.all <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
