@@ -56,11 +56,7 @@ saveRDS(lung.all, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
 saveRDS(lung.11, file = "/home/s1987963/MacrophageAtlas/raredon_lung_11.rds")
 saveRDS(lung.9, file = "/home/s1987963/MacrophageAtlas/raredon_lung_9.rds")
 
-
-### read data ###
-lung.all <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
-
-### QC metrics ###
+### QC metrics for lung.all ###
 ## QC at patient level ##
 # unique genes per cell
 VlnPlot(lung.all, features = c("nFeature_RNA"), group.by = "orig.ident", pt.size = 0.5)
