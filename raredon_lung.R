@@ -54,7 +54,7 @@ saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_pca.rds")
 
 ### clustering ###
 # evaluate different numbers of PCs and resolutions
-dims <- c(7,10,11,13,14)
+dims <- c(7,9,10,11,13,14)
 res <- seq(0.2,1.2,0.1)
 
 for(d in dims){
