@@ -1,0 +1,110 @@
+library(Seurat)
+library(harmony)
+library(liger)
+library(reticulate)
+library(umap)
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+
+### load lung.all data ###
+lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+
+### normalisation ###
+lung <- NormalizeData(lung, normalization.method = "LogNormalize", scale.factor = 10000)
+
+### feature selection ###
+# selecting the most highly variable genes
+lung <- FindVariableFeatures(lung, selection.method = "vst", nfeatures = 2000)
+
+# 10 most highly variable genes
+top10 <- head(VariableFeatures(lung), 10)
+
+# plot variable features with and without labels
+HVGs.plot <- VariableFeaturePlot(lung)
+HVGs.plot <- LabelPoints(plot = HVGs.plot, points = top10, repel = TRUE)
+HVGs.plot
+
+### scale data ###
+all.genes <- all.genes <- rownames(lung)
+lung.logtransform <- ScaleData(lung)
+lung.logtransform.regress.nFeatures <- ScaleData(lung, vars.to.regress = "nFeature_RNA")
+
+### dimensionality reduction: PCA ###
+lung.logtransform <- RunPCA(lung.logtransform, features = VariableFeatures(object = lung))
+lung.logtransform.regress.nFeatures <- RunPCA(lung.logtransform.regress.nFeatures, features = VariableFeatures(object = lung))
+
+## explore PCA results ##
+# genes making up the first 15 PCs
+print(lung[["pca"]], dims = 1:15, nfeatures = 5)
+
+# plot genes making PC1 and PC2
+VizDimLoadings(lung, dims = 1:2, reduction = "pca")
+
+# plot PC1 against PC2
+DimPlot(lung, reduction = "pca")
+
+# PC heatmap
+for(i in 1:4){
+  lower_limit <- 1+(6*(i-1))
+  upper_limit <- 6*i
+  DimHeatmap(lung, dims = lower_limit:upper_limit, nfeatures = 20, cells = 500, balanced = TRUE)
+}
+
+## elbow plot ##
+ElbowPlot(lung.logtransform, ndims = 50)
+ElbowPlot(lung.logtransform.regress.nFeatures, ndims = 50)
+
+### save data ###
+saveRDS(lung.logtransform, file = "/home/s1987963/MacrophageAtlas/raredon_lung_logtransform_pca.rds")
+saveRDS(lung.logtransform.regress.nFeatures, file = "/home/s1987963/MacrophageAtlas/raredon_lung_logtransform_regress_nFeatures_pca.rds")
+
+### clustering ###
+# evaluate different numbers of PCs and resolutions
+#dims <- c(7,9,10,11,13,14)
+#res <- seq(0.2,1.2,0.1)
+dims <- c(7)
+res <- c(1.1)
+
+for(d in dims){
+  lung <- RunUMAP(lung, dims=1:d, seed.use=1)
+  for (r in res) {
+    lung <- FindNeighbors(lung, dims = 1:d)
+    lung <- FindClusters(lung, resolution = r)
+    umap.plot <- DimPlot(lung, reduction = "umap", label = F)
+    batch.plot <- DimPlot(lung, reduction = "umap", group.by = "orig.ident")
+    eval(parse(text=paste0("UMAP_dim", d, "_res", r, " <- umap.plot + batch.plot")))
+  }
+}
+
+### save data ###
+saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
+
+### read data ###
+lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
+
+### find cluster marker genes ###
+# find markers for every cluster compared to all remaining cells, report only the positive ones
+lung.markers <- FindAllMarkers(lung, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+lung.markers %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC)
+
+## marker genes ##
+# all MNP markers
+MNP.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1","CD14", "MNDA",
+               "S100A8","S100A9", "CD1C","XCR1", "CD86" )
+# macrophage markers
+macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1")
+# monocyte markers
+monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
+# dendritic cell markers
+dc.genes <- c("CD1C","XCR1", "CD86")
+
+# dot plot
+DotPlot(lung, features = MNP.genes) + RotatedAxis()
+
+# feature plot
+FeaturePlot(lung, features = MNP.genes)
+
+### save file ###
+saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung_final.rds")
+
