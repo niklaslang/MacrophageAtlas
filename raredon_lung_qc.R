@@ -24,51 +24,49 @@ for(i in 1:length(lung.patient.ID)){
 for(i in 1:length(lung.patient.ID)){
   data <- paste0("lung.patient",lung.patient.ID[i])
   count_data <- paste0("lung.patient",lung.patient.ID[i],".data")
-  label <- paste0("patient",lung.patient.ID[i])
-  eval(parse(text=paste0(data," <- CreateSeuratObject(counts = ", count_data,", project = \"", label, "\",min.cells=3, min.features=200)")))
+  pat.ID <- paste0("patient",lung.patient.ID[i])
+  eval(parse(text=paste0(data," <- CreateSeuratObject(counts = ", count_data,", project = \"raredon_lung\", min.cells=3, min.features=200)")))
   eval(parse(text=paste0("rm(", count_data, ")")))
-}
-
-## Calculate missing metrics ##
-# compute fraction of mitochondrial gene counts
-for(i in 1:length(lung.patient.ID)){
-  data <- paste0("lung.patient",lung.patient.ID[i])
+  
+  # add metadata: author_dataset
+  eval(parse(text=paste0(data,"$author <- \"raredon_lung\"")))
+  
+  # add metadata: organ
+  eval(parse(text=paste0(data,"$organ <- \"lung\"")))
+  
+  # add metadata: condition
+  eval(parse(text=paste0(data,"$condition <- \"healthy\"")))
+  
+  # add metadata: patient ID
+  eval(parse(text=paste0(data,"$patient.ID <- \"", pat.ID, "\"")))
+  
+  # add meta data: calculate missing metrics
   eval(parse(text=paste0(data,"[[\"percent.mt\"]] <- PercentageFeatureSet(", data, ", pattern = \"^MT-\")")))
 }
 
 ## merge Seurat objects
-lung.all <- merge(lung.patient01, c(lung.patient02, lung.patient03, lung.patient04,
+lung <- merge(lung.patient01, c(lung.patient02, lung.patient03, lung.patient04,
                                    lung.patient05, lung.patient06, lung.patient07,
                                    lung.patient08, lung.patient09, lung.patient10,
                                    lung.patient11, lung.patient12, lung.patient13,
                                    lung.patient14))
 
-lung.11 <- merge(lung.patient03, c(lung.patient04, lung.patient05, lung.patient07,
-                                   lung.patient08, lung.patient09, lung.patient10,
-                                   lung.patient11, lung.patient12, lung.patient13, 
-                                   lung.patient14))
-
-lung.9 <- merge(lung.patient04, c(lung.patient05, lung.patient07, lung.patient08, 
-                                    lung.patient09, lung.patient11, lung.patient13, 
-                                    lung.patient14))
 ### save merged data ###
-saveRDS(lung.all, file = "/home/s1987963/MacrophageAtlas/raredon_lung_all.rds")
-saveRDS(lung.11, file = "/home/s1987963/MacrophageAtlas/raredon_lung_11.rds")
-saveRDS(lung.9, file = "/home/s1987963/MacrophageAtlas/raredon_lung_9.rds")
+saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung.rds")
 
-### QC metrics for lung.all ###
+### QC metrics ###
 ## QC at patient level ##
 # unique genes per cell
-VlnPlot(lung.all, features = c("nFeature_RNA"), group.by = "orig.ident", pt.size = 0.5)
-VlnPlot(lung.all, features = c("nFeature_RNA"), group.by = "orig.ident", pt.size = 0)
+VlnPlot(lung, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
+VlnPlot(lung, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
 
 # unique transcripts per cell
-VlnPlot(lung.all, features = c("nCount_RNA"), group.by = "orig.ident", pt.size = 0.5)
-VlnPlot(lung.all, features = c("nCount_RNA"), group.by = "orig.ident", pt.size = 0)
+VlnPlot(lung, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+VlnPlot(lung, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
 
 # mitochondrial fraction per cell
-VlnPlot(lung.all, features = c("percent.mt"), group.by = "orig.ident", pt.size = 0.5)
-VlnPlot(lung.all, features = c("percent.mt"), group.by = "orig.ident", pt.size = 0)
+VlnPlot(lung, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
+VlnPlot(lung, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
 
 ## overall QC ##
 # violin plots
@@ -76,7 +74,7 @@ QC.violin <- function(data){
   violin.plots <- VlnPlot(data, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, group.by = NULL)
   return(violin.plots)
 }
-QC.violin.before <- QC.violin(lung.all)
+QC.violin.before <- QC.violin(lung)
 QC.violin.before
 
 # scatter plots
@@ -88,7 +86,7 @@ QC.scatter <- function(data){
   scatter.plots[[2]] <- scatter2
   return(scatter.plots)
 }
-QC.scatter.before <- QC.scatter(lung.all)
+QC.scatter.before <- QC.scatter(lung)
 QC.scatter.before[[1]] + QC.scatter.before[[2]]
 
 # histograms
@@ -117,7 +115,7 @@ QC.histograms <- function(data){
   histograms[[3]] <- hist3
   return(histograms)
 }
-QC.histograms.before <- QC.histograms(lung.all)
+QC.histograms.before <- QC.histograms(lung)
 QC.histograms.before[[1]]+QC.histograms.before[[2]]+QC.histograms.before[[3]]
 
 ### conclusion ###
