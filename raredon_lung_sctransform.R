@@ -40,10 +40,10 @@ lung.sctransform <- RunPCA(lung.sctransform, verbose = TRUE)
 ElbowPlot(lung.sctransform, ndims = 50)
 
 ### UMAP visualisation ###
-dims <- c(6,8,10,12,15)
+dims <- c(5,7,9,11,14,17)
 for(d in dims){
   lung.sctransform <- RunUMAP(lung.sctransform, dims = 1:d)
-  umap.batch.plot <- DimPlot(lung, reduction = "umap", label = F)
+  umap.batch.plot <- DimPlot(lung.sctransform, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
   eval(parse(text=paste0("UMAP.batch_dim", d, " <- umap.batch.plot")))
 }
 
