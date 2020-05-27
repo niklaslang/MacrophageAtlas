@@ -69,6 +69,10 @@ lung.sctransform <- RunUMAP(lung.sctransform, dims=1:11, seed.use=1)
 lung.sctransform <- FindNeighbors(lung.sctransform, dims = 1:11)
 lung.sctransform <- FindClusters(lung.sctransform, resolution = 1.0)
 
+### explore clustering at patient level ###
+lung.sctransform$cluster <- Idents(lung.sctransform)
+DimPlot(lung.sctransform, group.by = "cluster", split.by = "patient.ID", ncol = 5)
+
 ### save data ###
 saveRDS(lung.sctransform, file = "/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung_sctransform.rds")
 
@@ -76,11 +80,33 @@ saveRDS(lung.sctransform, file = "/home/s1987963/ds_group/Niklas/raredon_lung/ra
 # all MNP markers
 MNP.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1","CD14", "MNDA",
                "S100A8","S100A9", "CD1C","XCR1", "CD86" )
+
 # macrophage markers
-macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1")
+macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1","CD68")
 # monocyte markers
 monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
 dc.genes <- c("CD1C","XCR1", "CD86")
 # lineage markers
 lineage.genes <- c("EPCAM", "CD3D", "CDH5", "PECAM1", "PDGFRB", "PDGFRA", "CD34", "GZMA", "CD79A", "CD79B")
+
+# set default essay to RNA counts
+DefaultAssay(lung.sctransform) <- "RNA"
+# Normalize RNA data for visualization purposes
+lung.sctransform <- NormalizeData(lung.sctransform, verbose = TRUE)
+# feature plot with macrophage markers
+FeaturePlot(lung.sctransform, features = macrophage.genes, pt.size = 0.2)
+# feature plot with monocyte markers
+FeaturePlot(lung.sctransform, features = monocyte.genes, pt.size = 0.2)
+# feature plot with DC markers
+FeaturePlot(lung.sctransform, features = dc.genes, pt.size = 0.5, ncol = 3)
+# feature plot with more general lineage markers
+FeaturePlot(lung.sctransform, features = lineage.genes, pt.size = 0.5, ncol =3)
+
+
+
+
+
+
+
+
