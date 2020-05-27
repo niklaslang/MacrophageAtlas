@@ -39,15 +39,48 @@ lung.sctransform <- RunPCA(lung.sctransform, verbose = TRUE)
 # elbow plot
 ElbowPlot(lung.sctransform, ndims = 50)
 
-### UMAP visualisation ###
+### UMAP visualisation of batch effect ###
 dims <- c(5,7,9,11,14,17)
 for(d in dims){
-  lung.sctransform <- RunUMAP(lung.sctransform, dims = 1:d)
+  lung.sctransform <- RunUMAP(lung.sctransform, dims = 1:d, seed.use=1)
   umap.batch.plot <- DimPlot(lung.sctransform, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
   eval(parse(text=paste0("UMAP.batch_dim", d, " <- umap.batch.plot")))
 }
 
+### clustering ###
+# evaluate different numbers of PCs and resolutions
+dims <- c(7,9,11,14,17)
+res <- seq(0.2,1.6,0.1)
+for(d in dims){
+  lung.sctransform <- RunUMAP(lung.sctransform, dims=1:d, seed.use=1)
+  for (r in res) {
+    lung.sctransform <- FindNeighbors(lung.sctransform, dims = 1:d)
+    lung.sctransform <- FindClusters(lung.sctransform, resolution = r)
+    umap.plot <- DimPlot(lung.sctransform, reduction = "umap", pt.size = 0.1)
+    batch.plot <- DimPlot(lung.sctransform, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
+    eval(parse(text=paste0("UMAP_dim", d, "_res", r, " <- umap.plot + batch.plot")))
+  }
+}
+
+### preliminary clustering ###
+## first 11 PCs ##
+## resolution 1.0 ##
+lung.sctransform <- RunUMAP(lung.sctransform, dims=1:11, seed.use=1)
+lung.sctransform <- FindNeighbors(lung.sctransform, dims = 1:11)
+lung.sctransform <- FindClusters(lung.sctransform, resolution = 1.0)
+
 ### save data ###
-saveRDS(lung.sctransform, file = "/home/s1987963/MacrophageAtlas/raredon_lung_sctransform.rds")
+saveRDS(lung.sctransform, file = "/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung_sctransform.rds")
 
-
+### marker gene visualization ###
+# all MNP markers
+MNP.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1","CD14", "MNDA",
+               "S100A8","S100A9", "CD1C","XCR1", "CD86" )
+# macrophage markers
+macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1")
+# monocyte markers
+monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
+# dendritic cell markers
+dc.genes <- c("CD1C","XCR1", "CD86")
+# lineage markers
+lineage.genes <- c("EPCAM", "CD3D", "CDH5", "PECAM1", "PDGFRB", "PDGFRA", "CD34", "GZMA", "CD79A", "CD79B")
