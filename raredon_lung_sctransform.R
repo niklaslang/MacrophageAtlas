@@ -1,14 +1,14 @@
 library(Seurat)
 library(sctransform)
-library(harmony)
-library(liger)
 library(reticulate)
 library(umap)
 library(dplyr)
 library(ggplot2)
+library(RColorBrewer)
 library(patchwork)
 
 ### load lung data ###
+sctransform.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/sctransform/"
 lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
 
 ### split lung data ###
@@ -48,7 +48,8 @@ for(d in dims){
 }
 
 ### clustering ###
-# evaluate different numbers of PCs and resolutions
+
+## evaluate different numbers of PCs and resolutions ##
 dims <- c(7,9,11,14,17)
 res <- seq(0.2,1.6,0.1)
 for(d in dims){
@@ -62,27 +63,29 @@ for(d in dims){
   }
 }
 
-### preliminary clustering ###
-## first 11 PCs ##
-## resolution 1.0 ##
+## preliminary clustering ##
+# first 11 PCs, resolution 1.0
 lung.sctransform <- RunUMAP(lung.sctransform, dims=1:11, seed.use=1)
 lung.sctransform <- FindNeighbors(lung.sctransform, dims = 1:11)
 lung.sctransform <- FindClusters(lung.sctransform, resolution = 1.0)
 
-### explore clustering at patient level ###
+## explore clustering at patient level ##
 lung.sctransform$cluster <- Idents(lung.sctransform)
 DimPlot(lung.sctransform, group.by = "cluster", split.by = "patient.ID", ncol = 5)
 
 ### save data ###
-saveRDS(lung.sctransform, file = "/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung_sctransform.rds")
+saveRDS(lung.sctransform, file = "/home/s1987963/ds_group/Niklas/raredon_lung/sctransform/raredon_lung_sctransform.rds")
 
-### marker gene visualization ###
-# all MNP markers
-MNP.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB", "MRC1","CD14", "MNDA",
-               "S100A8","S100A9", "CD1C","XCR1", "CD86" )
+## QC metrics at cluster level ##
+cluster.qc.heatmap <- FeaturePlot(lung.sctransform, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), pt.size = 0.2, ncol = 3) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(sctransform.path,"cluster.qc.heatmap.png"), width=1500,height=500,units="px")
+print(cluster.qc.heatmap)
+dev.off()
 
+## marker gene visualization ##
 # macrophage markers
-macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1","CD68")
+macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1", "CCR5")
 # monocyte markers
 monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
@@ -94,14 +97,34 @@ lineage.genes <- c("EPCAM", "CD3D", "CDH5", "PECAM1", "PDGFRB", "PDGFRA", "CD34"
 DefaultAssay(lung.sctransform) <- "RNA"
 # Normalize RNA data for visualization purposes
 lung.sctransform <- NormalizeData(lung.sctransform, verbose = TRUE)
+
 # feature plot with macrophage markers
-FeaturePlot(lung.sctransform, features = macrophage.genes, pt.size = 0.2)
+macrophage.markers <- FeaturePlot(lung.sctransform, features = macrophage.genes, pt.size = 0.2, ncol = 4) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(sctransform.path,"macrophage.markers.png"), width=1600,height=800,units="px")
+print(macrophage.markers)
+dev.off()
+
 # feature plot with monocyte markers
-FeaturePlot(lung.sctransform, features = monocyte.genes, pt.size = 0.2)
+monocyte.markers <- FeaturePlot(lung.sctransform, features = monocyte.genes, pt.size = 0.2, ncol = 2) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(sctransform.path,"monocyte.markers.png"), width=800,height=800,units="px")
+print(monocyte.markers)
+dev.off()
+
 # feature plot with DC markers
-FeaturePlot(lung.sctransform, features = dc.genes, pt.size = 0.5, ncol = 3)
+dc.markers <- FeaturePlot(lung.sctransform, features = dc.genes, pt.size = 0.2, ncol = 3) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(sctransform.path,"dc.markers.png"), width=1200,height=400,units="px")
+print(dc.markers)
+dev.off()
+
 # feature plot with more general lineage markers
-FeaturePlot(lung.sctransform, features = lineage.genes, pt.size = 0.5, ncol =3)
+lineage.markers <- FeaturePlot(lung.sctransform, features = lineage.genes, pt.size = 0.2, ncol =3) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(sctransform.path,"lineage.markers.png"), width=1200,height=1200,units="px")
+print(lineage.markers)
+dev.off()
 
 
 
