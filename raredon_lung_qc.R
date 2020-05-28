@@ -1,5 +1,7 @@
 library(Seurat)
 library(SoupX)
+library(celda)
+library(Matrix)
 library(dplyr)
 library(umap)
 library(reticulate)
@@ -14,6 +16,7 @@ lung.data.patients <- c("GSM3926545_Hum1","GSM3926546_Hum2", "GSM4050097_Hum3",
                         "GSM4050111_Hum10","GSM4050112_Hum11","GSM4050113_Hum12",
                         "GSM4050114_Hum13","GSM4050115_Hum14")
 lung.patient.ID <- sprintf("%02d", 1:length(lung.data.patients))
+lung.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung.rds"
 
 # load lung samples separately
 for(i in 1:length(lung.patient.ID)){
@@ -118,4 +121,9 @@ QC.histograms <- function(data){
 QC.histograms.before <- QC.histograms(lung)
 QC.histograms.before[[1]]+QC.histograms.before[[2]]+QC.histograms.before[[3]]
 
-### conclusion ###
+### ambient RNA correction ###
+
+### doublet removal ###
+
+
+
