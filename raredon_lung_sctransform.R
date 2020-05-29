@@ -37,7 +37,10 @@ lung.sctransform <- IntegrateData(anchorset = lung.anchors, normalization.method
 lung.sctransform <- RunPCA(lung.sctransform, verbose = TRUE)
 
 # elbow plot
-ElbowPlot(lung.sctransform, ndims = 50)
+sctransform.elbow.plot <- ElbowPlot(lung.sctransform, ndims = 50)
+png(paste0(sctransform.path,"sctransform.elbow.plot.png"), width=1000,height=600,units="px")
+print(sctransform.elbow.plot)
+dev.off()
 
 ### UMAP visualisation of batch effect ###
 dims <- c(5,7,9,11,14,17)
@@ -57,9 +60,12 @@ for(d in dims){
   for (r in res) {
     lung.sctransform <- FindNeighbors(lung.sctransform, dims = 1:d)
     lung.sctransform <- FindClusters(lung.sctransform, resolution = r)
-    umap.plot <- DimPlot(lung.sctransform, reduction = "umap", pt.size = 0.1)
+    umap.plot <- DimPlot(lung.sctransform, reduction = "umap", label = F, pt.size = 0.1)
     batch.plot <- DimPlot(lung.sctransform, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
-    eval(parse(text=paste0("UMAP_dim", d, "_res", r, " <- umap.plot + batch.plot")))
+    eval.plot <- umap.plot + batch.plot
+    png(paste0(sctransform.path, "UMAP_dim", d, "_res", r, ".png"), width=1400, height=600, units="px")
+    print(eval.plot)
+    dev.off()
   }
 }
 
@@ -70,8 +76,10 @@ lung.sctransform <- FindNeighbors(lung.sctransform, dims = 1:11)
 lung.sctransform <- FindClusters(lung.sctransform, resolution = 1.0)
 
 ## explore clustering at patient level ##
-lung.sctransform$cluster <- Idents(lung.sctransform)
-DimPlot(lung.sctransform, group.by = "cluster", split.by = "patient.ID", ncol = 5)
+patient.clustering <- DimPlot(lung.sctransform, group.by = "seurat_clusters", split.by = "patient.ID", ncol = 7)
+png(paste0(sctransform.path,"patient.clustering.png"), width=1800,height=600,units="px")
+print(patient.clustering)
+dev.off()
 
 ### save data ###
 saveRDS(lung.sctransform, file = "/home/s1987963/ds_group/Niklas/raredon_lung/sctransform/raredon_lung_sctransform.rds")
