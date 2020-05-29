@@ -44,7 +44,7 @@ for(i in 1:length(patient.ID)){
   }
   
   # add metadata: patient ID
-  eval(parse(text=paste0(data,"$patient.ID <- \"", patient.ID, "\"")))
+  eval(parse(text=paste0(data,"$patient.ID <- \"", patient.ID[i], "\"")))
   
   # add meta data: calculate missing metrics
   eval(parse(text=paste0(data,"[[\"percent.mt\"]] <- PercentageFeatureSet(", data, ", pattern = \"^MT-\")")))
@@ -97,7 +97,7 @@ for(i in 1:length(patient.ID)){
   }
   
   # add metadata: patient ID
-  eval(parse(text=paste0(data,"$patient.ID <- \"", patient.ID, "\"")))
+  eval(parse(text=paste0(data,"$patient.ID <- \"", patient.ID[i], "\"")))
   
   # add meta data: calculate missing metrics
   eval(parse(text=paste0(data,"[[\"percent.mt\"]] <- PercentageFeatureSet(", data, ", pattern = \"^MT-\")")))
@@ -106,10 +106,10 @@ for(i in 1:length(patient.ID)){
 ### merge raw data ###
 ## merge Seurat objects
 lung.filtered <- merge(lung.healthy_01.filtered, c(lung.healthy_02.filtered, lung.healthy_03.filtered, lung.healthy_04.filtered,
-                                              lung.healthy_05.filtered, lung.healthy_06.filtered, lung.healthy_07.filtered,
-                                              lung.healthy_08.filtered, lung.fibrotic_01.filtered, lung.fibrotic_02.filtered,
-                                              lung.fibrotic_03.filtered, lung.fibrotic_04.filtered, lung.fibrotic_05.filtered,
-                                              lung.fibrotic_06.filtered, lung.fibrotic_07.filtered, lung.fibrotic_08.filtered))
+                                                   lung.healthy_05.filtered, lung.healthy_06.filtered, lung.healthy_07.filtered,
+                                                   lung.healthy_08.filtered, lung.fibrotic_01.filtered, lung.fibrotic_02.filtered,
+                                                   lung.fibrotic_03.filtered, lung.fibrotic_04.filtered, lung.fibrotic_05.filtered,
+                                                   lung.fibrotic_06.filtered, lung.fibrotic_07.filtered, lung.fibrotic_08.filtered))
 
 ### save merged filtered data ###
-saveRDS(lung.filtered, file = "reyfman_lung_filtered.rds")
+saveRDS(lung.filtered, file = "/Users/Niklas/Documents/Bioinformatics/MacrophageAtlas/reyfman_lung_filtered.rds")
