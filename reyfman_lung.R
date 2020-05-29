@@ -105,7 +105,7 @@ for(i in 1:length(patient.ID)){
 
 ### merge raw data ###
 ## merge Seurat objects
-lung.raw <- merge(lung.healthy_01.filtered, c(lung.healthy_02.filtered, lung.healthy_03.filtered, lung.healthy_04.filtered,
+lung.filtered <- merge(lung.healthy_01.filtered, c(lung.healthy_02.filtered, lung.healthy_03.filtered, lung.healthy_04.filtered,
                                               lung.healthy_05.filtered, lung.healthy_06.filtered, lung.healthy_07.filtered,
                                               lung.healthy_08.filtered, lung.fibrotic_01.filtered, lung.fibrotic_02.filtered,
                                               lung.fibrotic_03.filtered, lung.fibrotic_04.filtered, lung.fibrotic_05.filtered,
