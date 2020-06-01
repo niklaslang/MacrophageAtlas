@@ -82,12 +82,20 @@ QC.violin.before
 
 # scatter plots
 QC.scatter <- function(data){
-  scatter.plots <- list()
-  scatter1 <- FeatureScatter(data, feature1 = "nCount_RNA", feature2 = "percent.mt")
-  scatter.plots[[1]] <- scatter1
-  scatter2 <- FeatureScatter(data, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
-  scatter.plots[[2]] <- scatter2
-  return(scatter.plots)
+  scatter.plot <- ggplot(data[[]], aes( x = nFeature_RNA, y = nCount_RNA)) + 
+    geom_point(aes(colour = percent.mt), size = 0.1) + 
+    coord_cartesian(xlim = c(0.0 , 10000), ylim = c(0.0 , 100000)) +
+    labs(title = "Overall QC", x  ="Count depth", y = "Unique Genes") + 
+    theme(
+      plot.title = element_text(color = "black", size = 20 , face = "bold"),
+      axis.title.x = element_text(color = "black", size = 20, face = "bold"),
+      axis.title.y = element_text(color = "black", size = 20, face = "bold"),
+      legend.title = element_text(color = "black", size = 16, face = "bold", angle = 90)
+    ) +
+    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")),
+                           guide = guide_colourbar("Mitochondrial fraction", title.position = "right", title.vjust = 0.5, title.hjust = 0.5, barwidth = 1.0, barheight = 60))
+  
+  return(scatter.plot)
 }
 QC.scatter.before <- QC.scatter(lung)
 QC.scatter.before[[1]] + QC.scatter.before[[2]]
@@ -105,7 +113,7 @@ QC.histograms <- function(data){
   
   # distribution of count depth
   hist2 <- qplot(x =data[["nCount_RNA"]]$nCount_RNA, fill=..count.., geom="histogram", binwidth = 100,
-                 xlab = "Unique transcripts per cell",
+                 xlab = "Count depth per cell",
                  ylab = "Frequency",
                  main = "Transcript Count Distribution")+scale_fill_gradient(low="orange", high="red")
   histograms[[2]] <- hist2
