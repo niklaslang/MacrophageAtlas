@@ -1,10 +1,5 @@
 library(Seurat)
-library(SoupX)
-library(celda)
-library(Matrix)
 library(dplyr)
-library(umap)
-library(reticulate)
 library(ggplot2)
 library(patchwork)
 
@@ -16,14 +11,16 @@ lung.data.patients <- c("GSM3926545_Hum1","GSM3926546_Hum2", "GSM4050097_Hum3",
                         "GSM4050111_Hum10","GSM4050112_Hum11","GSM4050113_Hum12",
                         "GSM4050114_Hum13","GSM4050115_Hum14")
 lung.patient.ID <- sprintf("%02d", 1:length(lung.data.patients))
-lung.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung.rds"
 
-# load lung samples separately
+samples.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/samples/"
+merge.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung.rds"
+
+# load lung samples separately #
 for(i in 1:length(lung.patient.ID)){
   assign(paste0("lung.patient",lung.patient.ID[i],".data"), Read10X(data.dir = paste0(lung.data.dir, lung.data.patients[i])))
 }
 
-# initialize Seurat objects
+# initialize Seurat objects #
 for(i in 1:length(lung.patient.ID)){
   data <- paste0("lung.patient",lung.patient.ID[i])
   count_data <- paste0("lung.patient",lung.patient.ID[i],".data")
@@ -47,7 +44,18 @@ for(i in 1:length(lung.patient.ID)){
   eval(parse(text=paste0(data,"[[\"percent.mt\"]] <- PercentageFeatureSet(", data, ", pattern = \"^MT-\")")))
 }
 
-## merge Seurat objects
+# save samples separately #
+for(i in 1:length(lung.patient.ID)){
+  data <- paste0("lung.patient",lung.patient.ID[i])
+  eval(parse(text=paste0("saveRDS(", data, ", file = \"", samples.path, data, ".rds\")")))
+}
+
+### scrublet ###
+## perform doublet removal on personal machine ##
+
+### load scrublet output ###
+
+### merge scrublet output ###
 lung <- merge(lung.patient01, c(lung.patient02, lung.patient03, lung.patient04,
                                    lung.patient05, lung.patient06, lung.patient07,
                                    lung.patient08, lung.patient09, lung.patient10,
@@ -55,7 +63,7 @@ lung <- merge(lung.patient01, c(lung.patient02, lung.patient03, lung.patient04,
                                    lung.patient14))
 
 ### save merged data ###
-saveRDS(lung, file = "/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+saveRDS(lung, file = merge.path)
 
 ### QC metrics ###
 ## QC at patient level ##
@@ -129,9 +137,5 @@ QC.histograms <- function(data){
 QC.histograms.before <- QC.histograms(lung)
 QC.histograms.before[[1]]+QC.histograms.before[[2]]+QC.histograms.before[[3]]
 
-### ambient RNA correction ###
-
-### doublet removal ###
-
-
-
+### save merged data ###
+saveRDS(lung, file = merge.path)
