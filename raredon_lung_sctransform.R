@@ -9,7 +9,8 @@ library(patchwork)
 
 ### load lung data ###
 sctransform.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/sctransform/"
-lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+#lung <- readRDS("/home/s1987963/MacrophageAtlas/raredon_lung.rds")
+lung <- readRDS(paste0(sctransform.path, "raredon_lung_sctransform.rds"))
 
 ### split lung data ###
 lung.list <- SplitObject(lung, split.by = "patient.ID")
@@ -93,7 +94,7 @@ dev.off()
 
 ## marker gene visualization ##
 # macrophage markers
-macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1", "CCR5")
+macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1", "MARCO") #MSR1 maybe?
 # monocyte markers
 monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
