@@ -109,7 +109,7 @@ dev.off()
 
 ## marker gene visualization ##
 # macrophage markers
-macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1", "CCR5")
+macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1", "MARCO") #MSR1
 # monocyte markers
 monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
