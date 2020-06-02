@@ -87,9 +87,12 @@ for(d in dims){
 
 ## best (preliminary) clustering ##
 # first 10 PCs, resolution 0.9
-lung.logtransform.regress.nFeatures <- RunUMAP(lung.logtransform.regress.nFeatures, dims=1:10, seed.use=1)
 lung.logtransform.regress.nFeatures <- FindNeighbors(lung.logtransform.regress.nFeatures, dims = 1:10)
 lung.logtransform.regress.nFeatures <- FindClusters(lung.logtransform.regress.nFeatures, resolution = 0.9)
+# add UMAP
+lung.logtransform.regress.nFeatures <- RunUMAP(lung.logtransform.regress.nFeatures, dims=1:10, seed.use=1)
+# add tSNE
+lung.logtransform.regress.nFeatures <- RunTSNE(lung.logtransform.regress.nFeatures, dims=1:10, seed.use=1)
 
 ## explore clustering at patient level ##
 patient.clustering <- DimPlot(lung.logtransform.regress.nFeatures, group.by = "seurat_clusters", split.by = "patient.ID", ncol = 7)
