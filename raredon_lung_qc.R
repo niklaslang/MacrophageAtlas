@@ -14,6 +14,7 @@ lung.patient.ID <- sprintf("%02d", 1:length(lung.data.patients))
 
 samples.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/samples/"
 merge.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung.rds"
+raredon_lung.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/"
 
 # load lung samples separately #
 for(i in 1:length(lung.patient.ID)){
@@ -54,41 +55,44 @@ for(i in 1:length(lung.patient.ID)){
 ## perform doublet removal on personal machine ##
 
 ### load scrublet output ###
-
-### merge scrublet output ###
-lung <- merge(lung.patient01, c(lung.patient02, lung.patient03, lung.patient04,
-                                   lung.patient05, lung.patient06, lung.patient07,
-                                   lung.patient08, lung.patient09, lung.patient10,
-                                   lung.patient11, lung.patient12, lung.patient13,
-                                   lung.patient14))
-
-### save merged data ###
-saveRDS(lung, file = merge.path)
+lung <- readRDS(merge.path)
 
 ### QC metrics ###
 ## QC at patient level ##
 # unique genes per cell
-VlnPlot(lung, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
-VlnPlot(lung, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+nFeature.plot1 <- VlnPlot(lung, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(raredon_lung.path,"QC.nFeature_RNA.1.png"), width=1500,height=500,units="px")
+print(nFeature.plot1)
+dev.off()
+
+nFeature.plot2 <- VlnPlot(lung, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(raredon_lung.path,"QC.nFeature_RNA.2.png"), width=1500,height=500,units="px")
+print(nFeature.plot2)
+dev.off()
 
 # unique transcripts per cell
-VlnPlot(lung, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
-VlnPlot(lung, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+nCount.plot1 <- VlnPlot(lung, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(raredon_lung.path,"QC.nCount_RNA.1.png"), width=1500,height=500,units="px")
+print(nCount.plot1)
+dev.off()
+
+nCount.plot2 <- VlnPlot(lung, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(raredon_lung.path,"QC.nCount_RNA.2.png"), width=1500,height=500,units="px")
+print(nCount.plot2)
+dev.off()
 
 # mitochondrial fraction per cell
-VlnPlot(lung, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
-VlnPlot(lung, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+percent.mt.plot1 <- VlnPlot(lung, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(raredon_lung.path,"QC.percent.mt.1.png"), width=1500,height=500,units="px")
+print(percent.mt.plot1)
+dev.off()
 
-## overall QC ##
-# violin plots
-QC.violin <- function(data){
-  violin.plots <- VlnPlot(data, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, group.by = NULL)
-  return(violin.plots)
-}
-QC.violin.before <- QC.violin(lung)
-QC.violin.before
+percent.mt.plot2 <- VlnPlot(lung, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+png(paste0(raredon_lung.path,"QC.percent.mt.2.png"), width=1500,height=500,units="px")
+print(percent.mt.plot2)
+dev.off()
 
-# scatter plots
+## scatter plot ##
 QC.scatter <- function(data){
   scatter.plot <- ggplot(data[[]], aes( x = nFeature_RNA, y = nCount_RNA)) + 
     geom_point(aes(colour = percent.mt), size = 0.1) + 
@@ -105,10 +109,12 @@ QC.scatter <- function(data){
   
   return(scatter.plot)
 }
-QC.scatter.before <- QC.scatter(lung)
-QC.scatter.before[[1]] + QC.scatter.before[[2]]
+QC.scatter <- QC.scatter(lung)
+png(paste0(raredon_lung.path,"QC.scatter.png"), width=1600,height=1000,units="px")
+print(QC.scatter)
+dev.off()
 
-# histograms
+## histograms ##
 QC.histograms <- function(data){
   histograms <- list()
   
@@ -134,8 +140,10 @@ QC.histograms <- function(data){
   histograms[[3]] <- hist3
   return(histograms)
 }
-QC.histograms.before <- QC.histograms(lung)
-QC.histograms.before[[1]]+QC.histograms.before[[2]]+QC.histograms.before[[3]]
+QC.histograms <- QC.histograms(lung)
+QC.all.histograms <- QC.histograms[[1]]+QC.histograms[[2]]+QC.histograms[[3]]
+png(paste0(raredon_lung.path,"QC.histogram.png"), width=1500,height=500,units="px")
+print(QC.all.histograms)
+dev.off()
 
-### save merged data ###
-saveRDS(lung, file = merge.path)
+### apply cut-offs ###
