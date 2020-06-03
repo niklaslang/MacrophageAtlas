@@ -121,7 +121,13 @@ monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
 dc.genes <- c("CD1C","XCR1", "CD86")
 # lineage markers
-lineage.genes <- c("EPCAM", "CD3D", "CDH5", "PECAM1", "PDGFRB", "PDGFRA", "CD34", "GZMA", "CD79A", "CD79B")
+lineage.genes <- c("EPCAM", #epithelial cells
+                   "CDH5", "PECAM1", #endothelial cells
+                   "PDGFRB", "PDGFRA", "CD34", #mesenchymal cells
+                   "PTPRC", #immune cells
+                   "CD3D", "GZMA", #T-cells
+                   "CD79A", "CD79B" #B-cells
+)
 
 # set default essay to RNA counts
 DefaultAssay(lung.logtransform.regress.nFeatures) <- "RNA"
@@ -150,9 +156,9 @@ print(dc.markers)
 dev.off()
 
 # feature plot with more general lineage markers
-lineage.markers <- FeaturePlot(lung.logtransform.regress.nFeatures, features = lineage.genes, pt.size = 0.2, ncol =3) & 
+lineage.markers <- FeaturePlot(lung.logtransform.regress.nFeatures, features = lineage.genes, pt.size = 0.2, ncol = 5) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(logtransform.regress.nFeatures.path,"lineage.markers.png"), width=1200,height=1200,units="px")
+png(paste0(logtransform.regress.nFeatures.path,"lineage.markers.png"), width=2000,height=800,units="px")
 print(lineage.markers)
 dev.off()
 
@@ -258,9 +264,9 @@ print(dc.markers)
 dev.off()
 
 # feature plot with more general lineage markers
-lineage.markers <- FeaturePlot(lung.logtransform, features = lineage.genes, pt.size = 0.2, ncol =3) & 
+lineage.markers <- FeaturePlot(lung.logtransform, features = lineage.genes, pt.size = 0.2, ncol = 5) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(logtransform.path,"lineage.markers.png"), width=1200,height=1200,units="px")
+png(paste0(logtransform.path,"lineage.markers.png"), width=2000,height=800,units="px")
 print(lineage.markers)
 dev.off()
 
