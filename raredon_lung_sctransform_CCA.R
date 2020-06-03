@@ -9,7 +9,8 @@ library(patchwork)
 
 ### load lung data ###
 sctransform.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/sctransform_CCA/"
-lung <- readRDS(paste0(sctransform.path, "raredon_lung_sctransform_CCA.rds"))
+lung <- readRDS("/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung.rds")
+lung.sctransform <- readRDS(paste0(sctransform.path, "raredon_lung_sctransform_CCA.rds"))
 
 ### split lung data ###
 lung.list <- SplitObject(lung, split.by = "patient.ID")
@@ -38,7 +39,7 @@ lung.sctransform <- RunPCA(lung.sctransform, verbose = TRUE)
 
 # elbow plot
 sctransform.elbow.plot <- ElbowPlot(lung.sctransform, ndims = 50)
-png(paste0(sctransform.path,"sctransform.elbow.plot.png"), width=1000,height=600,units="px")
+png(paste0(sctransform.path,"sctransform_CCA.elbow.plot.png"), width=1000,height=600,units="px")
 print(sctransform.elbow.plot)
 dev.off()
 
@@ -51,7 +52,6 @@ for(d in dims){
 }
 
 ### clustering ###
-
 ## evaluate different numbers of PCs and resolutions ##
 dims <- c(7,9,11,14,17)
 res <- seq(0.2,1.6,0.1)
@@ -99,7 +99,13 @@ monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
 dc.genes <- c("CD1C","XCR1", "CD86")
 # lineage markers
-lineage.genes <- c("EPCAM", "CD3D", "CDH5", "PECAM1", "PDGFRB", "PDGFRA", "CD34", "GZMA", "CD79A", "CD79B")
+lineage.genes <- c("EPCAM", #epithelial cells
+                   "CDH5", "PECAM1", #endothelial cells
+                   "PDGFRB", "PDGFRA", "CD34", #mesenchymal cells
+                   "PTPRC", #immune cells
+                   "CD3D", "GZMA", #T-cells
+                   "CD79A", "CD79B" #B-cells
+)
 
 # set default essay to RNA counts
 DefaultAssay(lung.sctransform) <- "RNA"
@@ -128,9 +134,9 @@ print(dc.markers)
 dev.off()
 
 # feature plot with more general lineage markers
-lineage.markers <- FeaturePlot(lung.sctransform, features = lineage.genes, pt.size = 0.2, ncol =3) & 
+lineage.markers <- FeaturePlot(lung.sctransform, features = lineage.genes, pt.size = 0.2, ncol = 5) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(sctransform.path,"lineage.markers.png"), width=1200,height=1200,units="px")
+png(paste0(sctransform.path,"lineage.markers.png"), width=2000,height=800,units="px")
 print(lineage.markers)
 dev.off()
 
