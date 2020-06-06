@@ -160,62 +160,62 @@ png(paste0(reyfman_lung.path,"QC.scrublet.percent.mt.2.png"), width=1500,height=
 print(percent.mt.plot2)
 dev.off()
 
+### split data by condition ###
+lung.healthy <- subset(lung.scrublet, subset = condition == "healthy")
+lung.fibrotic <- subset(lung.scrublet, subset = condition == "fibrotic")
+
 ### remove low quality cells ###
-# cells with fewer than 1500 transcripts
 # cells with mitochondrial fraction higher than 15
-lung.qc1 <- subset(lung.scrublet, subset = nCount_RNA > 1500 & percent.mt < 15)
+# cells with fewer than 500 and more than 6,000 genes
+lung.healthy <- subset(lung.healthy, subset = nFeature_RNA > 500 & nFeature_RNA < 6000 & percent.mt < 15)
 
 ### post cut-off QC plots ###
 ## histograms ## 
-QC.histograms.qc1 <- QC.histograms(lung.qc1)
-QC.all.histograms.qc1 <- QC.histograms.qc1[[1]]+QC.histograms.qc1[[2]]+QC.histograms.qc1[[3]]
-png(paste0(reyfman_lung.path,"QC.qc1.histogram.png"), width=1500,height=500,units="px")
-print(QC.all.histograms.qc1)
+QC.histograms.healthy <- QC.histograms(lung.healthy)
+QC.all.histograms.healthy <- QC.histograms.healthy[[1]]+QC.histograms.healthy[[2]]+QC.histograms.healthy[[3]]
+png(paste0(reyfman_lung.path,"QC.healthy.histogram.png"), width=1500,height=500,units="px")
+print(QC.all.histograms.healthy)
 dev.off()
 
 ## post cut-off QC scatter plot ##
-QC.scatter.qc1 <- QC.scatter(lung.qc1)
-png(paste0(reyfman_lung.path,"QC.qc1.scatter.png"), width=1600,height=1000,units="px")
-print(QC.scatter.qc1)
+QC.scatter.healthy <- QC.scatter(lung.healthy)
+png(paste0(reyfman_lung.path,"QC.healthy.scatter.png"), width=1600,height=1000,units="px")
+print(QC.scatter.healthy)
 dev.off()
 
 ## post cuf-off QC at patient level ##
 # unique genes per cell
-nFeature.plot1 <- VlnPlot(lung.qc1, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
-png(paste0(reyfman_lung.path,"QC.qc1.nFeature_RNA.1.png"), width=1500,height=500,units="px")
+nFeature.plot1 <- VlnPlot(lung.healthy, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(reyfman_lung.path,"QC.healthy.nFeature_RNA.1.png"), width=1500,height=500,units="px")
 print(nFeature.plot1)
 dev.off()
 
-nFeature.plot2 <- VlnPlot(lung.qc1, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
-png(paste0(reyfman_lung.path,"QC.qc1.nFeature_RNA.2.png"), width=1500,height=500,units="px")
+nFeature.plot2 <- VlnPlot(lung.healthy, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(reyfman_lung.path,"QC.healthy.nFeature_RNA.2.png"), width=1500,height=500,units="px")
 print(nFeature.plot2)
 dev.off()
 
 # unique transcripts per cell
-nCount.plot1 <- VlnPlot(lung.qc1, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
-png(paste0(reyfman_lung.path,"QC.qc1.nCount_RNA.1.png"), width=1500,height=500,units="px")
+nCount.plot1 <- VlnPlot(lung.healthy, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(reyfman_lung.path,"QC.healthy.nCount_RNA.1.png"), width=1500,height=500,units="px")
 print(nCount.plot1)
 dev.off()
 
-nCount.plot2 <- VlnPlot(lung.qc1, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
-png(paste0(reyfman_lung.path,"QC.qc1.nCount_RNA.2.png"), width=1500,height=500,units="px")
+nCount.plot2 <- VlnPlot(lung.healthy, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(reyfman_lung.path,"QC.healthy.nCount_RNA.2.png"), width=1500,height=500,units="px")
 print(nCount.plot2)
 dev.off()
 
 # mitochondrial fraction per cell
-percent.mt.plot1 <- VlnPlot(lung.qc1, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
-png(paste0(reyfman_lung.path,"QC.qc1.percent.mt.1.png"), width=1500,height=500,units="px")
+percent.mt.plot1 <- VlnPlot(lung.healthy, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(reyfman_lung.path,"QC.healthy.percent.mt.1.png"), width=1500,height=500,units="px")
 print(percent.mt.plot1)
 dev.off()
 
-percent.mt.plot2 <- VlnPlot(lung.qc1, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
-png(paste0(reyfman_lung.path,"QC.qc1.percent.mt.2.png"), width=1500,height=500,units="px")
+percent.mt.plot2 <- VlnPlot(lung.healthy, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+png(paste0(reyfman_lung.path,"QC.healthy.percent.mt.2.png"), width=1500,height=500,units="px")
 print(percent.mt.plot2)
 dev.off()
-
-### split data by condition ###
-lung.healthy <- subset(lung.qc1, subset = condition == "healthy")
-lung.fibrotic <- subset(lung.qc1, subset = condition == "fibrotic")
 
 ### save data ###
 saveRDS(lung.healthy, paste0(reyfman_lung.path, "reyfman_lung_healthy.rds"))
