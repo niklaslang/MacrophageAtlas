@@ -8,8 +8,10 @@ library(patchwork)
 
 ### path variables ###
 lung.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/reyfman_lung_healthy.rds"
-logtransform.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/logtransform/"
-
+# logtransform.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/logtransform/uncorrected/" # uncorrected/unadjusted
+# logtransform.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/logtransform/regress.nFeatures/" # corrected for nFeature
+logtransform.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/logtransform/uncorrected/" # corrected for nCounts and mitochondrial fraction
+  
 ### read healthy lung data ###
 lung <- readRDS(lung.path)
 
@@ -29,7 +31,9 @@ HVGs.plot <- LabelPoints(plot = HVGs.plot, points = top10, repel = TRUE)
 HVGs.plot
 
 ### scale data ###
-lung.logtransform <- ScaleData(lung)
+# lung.logtransform <- ScaleData(lung) # uncorrected
+# lung.logtransform <- ScaleData(lung, vars.to.regress = "nFeature_RNA") # adjusted for nFeatures
+lung.logtransform <- ScaleData(lung, vars.to.regress = c("nCount_RNA", "percent.mt")) # adjusted for nCounts + percent.mt
 
 ### dimensionality reduction: PCA ###
 lung.logtransform <- RunPCA(lung.logtransform, features = VariableFeatures(object = lung))
@@ -52,8 +56,10 @@ dev.off()
 
 ### clustering ###
 # evaluate different numbers of PCs and resolutions
-dims <- c(6,9,11,13,18)
-res <- seq(0.1,1.5,0.1)
+#dims <- c() #adjusted for nFeatures
+#dims <- c() #adjusted for nCounts + percent.mito
+dims <- c(6,8,9,11,15,20,30) # uncorrected/adjusted
+res <- seq(0.3,1.5,0.1)
 
 for(d in dims){
   lung.logtransform <- RunUMAP(lung.logtransform, dims=1:d, seed.use=1)
@@ -71,13 +77,15 @@ for(d in dims){
 
 ### definite clustering ###
 ## best (preliminary) clustering ##
-# first 6 PCs, resolution 0.3
-lung.logtransform <- FindNeighbors(lung.logtransform, dims = 1:6)
+# uncorrected/adjusted: 8 first PCs, resolution 0.3
+# adjusted for nFeatures: XY first PCs, resolution
+# adjusted for nCounts + percent.mito: XY first PCs, resolution
+lung.logtransform <- FindNeighbors(lung.logtransform, dims = 1:8)
 lung.logtransform <- FindClusters(lung.logtransform, resolution = 0.3)
 # add UMAP
-lung.logtransform <- RunUMAP(lung.logtransform, dims=1:6, seed.use=1)
+lung.logtransform <- RunUMAP(lung.logtransform, dims=1:8, seed.use=1)
 # add tSNE
-lung.logtransform <- RunTSNE(lung.logtransform, dims=1:6, seed.use=1)
+lung.logtransform <- RunTSNE(lung.logtransform, dims=1:8, seed.use=1)
 
 ## explore clustering at patient level ##
 patient.clustering <- DimPlot(lung.logtransform, group.by = "seurat_clusters", split.by = "patient.ID", ncol = 4)
@@ -85,17 +93,8 @@ png(paste0(logtransform.path,"patient.clustering.png"), width=1600,height=800,un
 print(patient.clustering)
 dev.off()
 
-## triple UMAP ##
-#umap.1 <- DimPlot(lung.logtransform, reduction = "umap", label = F, pt.size = 0.1)
-#umap.2 <- DimPlot(lung.logtransform, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
-#umap.3 <- DimPlot(lung.logtransform, reduction = "umap", group.by = "scrublet_auto", pt.size = 0.1)
-#triple.umap <- umap.1 + umap.2 + umap.3
-#png(paste0(logtransform.path,"triple.umap.png"), width=1800,height=600,units="px")
-#print(triple.umap)
-#dev.off()
-
 ### save data ###
-saveRDS(lung.logtransform, file = "/home/s1987963/ds_group/Niklas/raredon_lung/merge/raredon_lung_logtransform.rds")
+saveRDS(lung.logtransform, file = paste0(logtransform.path, "reyfman_lung_logtransform.rds"))
 
 ## QC metrics at cluster level ##
 cluster.qc.heatmap <- FeaturePlot(lung.logtransform, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), pt.size = 0.2, ncol = 3) & 
@@ -110,13 +109,13 @@ macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1"
 # monocyte markers
 monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
-dc.genes <- c("CD1C","XCR1", "CD86")
+dc.genes <- c("CD1C","XCR1", "CD86", "CCL17", "S100B", "CD74", "RGS1")
 # lineage markers
 lineage.genes <- c("EPCAM", #epithelial cells
-                   "CDH5", "PECAM1", #endothelial cells
-                   "CD3D", "GZMA", #T-cells,
-                   "PDGFRB", "PDGFRA", #mesenchymal cells
-                   "CD34",  
+                   "CDH5", "PECAM1", "VWF", "KDR", #endothelial cells
+                   "PDGFRA", "PDGFRB", "ACTA2", "MYH11", "CD34", #mesenchymal cells
+                   "PTPRC", #immune cells
+                   "CD3D", "GZMA", #T-cells
                    "CD79A", "CD79B" #B-cells
 )
 
@@ -142,13 +141,13 @@ dev.off()
 # feature plot with DC markers
 dc.markers <- FeaturePlot(lung.logtransform, features = dc.genes, pt.size = 0.2, ncol = 3) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(logtransform.path,"dc.markers.png"), width=1200,height=400,units="px")
+png(paste0(logtransform.path,"dc.markers.png"), width=1200,height=800,units="px")
 print(dc.markers)
 dev.off()
 
 # feature plot with more general lineage markers
 lineage.markers <- FeaturePlot(lung.logtransform, features = lineage.genes, pt.size = 0.2, ncol = 5) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(logtransform.path,"lineage.markers.png"), width=2000,height=800,units="px")
+png(paste0(logtransform.path,"lineage.markers.png"), width=1800,height=1000,units="px")
 print(lineage.markers)
 dev.off()
