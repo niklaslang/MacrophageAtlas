@@ -10,7 +10,7 @@ library(patchwork)
 lung.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/reyfman_lung_healthy.rds"
 # logtransform.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/logtransform/uncorrected/" # uncorrected/unadjusted
 # logtransform.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/logtransform/regress.nFeatures/" # corrected for nFeature
-logtransform.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/logtransform/uncorrected/" # corrected for nCounts and mitochondrial fraction
+logtransform.path <- "/home/s1987963/ds_group/Niklas/reyfman_lung/logtransform/regress.nCounts.mito/" # corrected for nCounts and mitochondrial fraction
   
 ### read healthy lung data ###
 lung <- readRDS(lung.path)
@@ -38,16 +38,6 @@ lung.logtransform <- ScaleData(lung, vars.to.regress = c("nCount_RNA", "percent.
 ### dimensionality reduction: PCA ###
 lung.logtransform <- RunPCA(lung.logtransform, features = VariableFeatures(object = lung))
 
-## explore PCA results ##
-# genes making up the first 15 PCs
-print(lung.logtransform[["pca"]], dims = 1:15, nfeatures = 5)
-
-# plot genes making PC1 and PC2
-VizDimLoadings(lung.logtransform, dims = 1:2, reduction = "pca")
-
-# plot PC1 against PC2
-DimPlot(lung.logtransform, reduction = "pca", group.by = "patient.ID")
-
 ## elbow plot ##
 logtransform.elbow.plot <- ElbowPlot(lung.logtransform, ndims = 50)
 png(paste0(logtransform.path,"logtransform.elbow.plot.png"), width=1000,height=600,units="px")
@@ -57,8 +47,8 @@ dev.off()
 ### clustering ###
 # evaluate different numbers of PCs and resolutions
 #dims <- c() #adjusted for nFeatures
-#dims <- c() #adjusted for nCounts + percent.mito
-dims <- c(6,8,9,11,15,20,30) # uncorrected/adjusted
+dims <- c(4,6,9,11,15,17,25) #adjusted for nCounts + percent.mito
+#dims <- c(6,8,9,11,15,20,30) # uncorrected/adjusted
 res <- seq(0.3,1.5,0.1)
 
 for(d in dims){
@@ -78,23 +68,23 @@ for(d in dims){
 ### definite clustering ###
 ## best (preliminary) clustering ##
 # uncorrected/adjusted: 8 first PCs, resolution 0.3
-# adjusted for nFeatures: XY first PCs, resolution
-# adjusted for nCounts + percent.mito: XY first PCs, resolution
-lung.logtransform <- FindNeighbors(lung.logtransform, dims = 1:8)
-lung.logtransform <- FindClusters(lung.logtransform, resolution = 0.3)
+# adjusted for nFeatures: XY first PCs, resolution XY
+# adjusted for nCounts + percent.mito: 6 first PCs, resolution 0.4
+lung.logtransform <- FindNeighbors(lung.logtransform, dims = 1:6)
+lung.logtransform <- FindClusters(lung.logtransform, resolution = 0.4)
 # add UMAP
-lung.logtransform <- RunUMAP(lung.logtransform, dims=1:8, seed.use=1)
+lung.logtransform <- RunUMAP(lung.logtransform, dims=1:6, seed.use=1)
 # add tSNE
-lung.logtransform <- RunTSNE(lung.logtransform, dims=1:8, seed.use=1)
+lung.logtransform <- RunTSNE(lung.logtransform, dims=1:6, seed.use=1)
+
+### save data ###
+saveRDS(lung.logtransform, file = paste0(logtransform.path, "reyfman_lung_logtransform.rds"))
 
 ## explore clustering at patient level ##
 patient.clustering <- DimPlot(lung.logtransform, group.by = "seurat_clusters", split.by = "patient.ID", ncol = 4)
 png(paste0(logtransform.path,"patient.clustering.png"), width=1600,height=800,units="px")
 print(patient.clustering)
 dev.off()
-
-### save data ###
-saveRDS(lung.logtransform, file = paste0(logtransform.path, "reyfman_lung_logtransform.rds"))
 
 ## QC metrics at cluster level ##
 cluster.qc.heatmap <- FeaturePlot(lung.logtransform, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), pt.size = 0.2, ncol = 3) & 
@@ -109,7 +99,7 @@ macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1"
 # monocyte markers
 monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
-dc.genes <- c("CD1C","XCR1", "CD86", "CCL17", "S100B", "CD74", "RGS1")
+dc.genes <- c("CD1C","XCR1", "CD86", "CCL17", "S100B", "RGS1")
 # lineage markers
 lineage.genes <- c("EPCAM", #epithelial cells
                    "CDH5", "PECAM1", "VWF", "KDR", #endothelial cells
@@ -118,11 +108,6 @@ lineage.genes <- c("EPCAM", #epithelial cells
                    "CD3D", "GZMA", #T-cells
                    "CD79A", "CD79B" #B-cells
 )
-
-# set default essay to RNA counts
-DefaultAssay(lung.logtransform) <- "RNA"
-# Normalize RNA data for visualization purposes
-lung.logtransform <- NormalizeData(lung.logtransform, verbose = TRUE)
 
 # feature plot with macrophage markers
 macrophage.markers <- FeaturePlot(lung.logtransform, features = macrophage.genes, pt.size = 0.2, ncol = 4) & 
