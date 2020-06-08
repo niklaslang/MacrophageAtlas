@@ -9,11 +9,12 @@ library(RColorBrewer)
 library(patchwork)
 
 ### path variables ###
-harmony.path <- "/Users/Niklas/Documents/MASTER/harmony/raredon_lung/regress.out.nFeatures/"
+harmony.path <- "/home/s1987963/ds_group/Niklas/raredon_lung/harmony/"
 # harmony.path <- "/Users/Niklas/Documents/MASTER/harmony/raredon_lung/"
 
 ### load lung data ###
-lung <- readRDS("/Users/Niklas/Documents/MASTER/harmony/raredon_lung/raredon_lung.rds")
+lung <- readRDS("/home/s1987963/ds_group/Niklas/raredon_lung/raredon_lung.rds")
+lung.harmony <- readRDS("/home/s1987963/ds_group/Niklas/raredon_lung/harmony/raredon_lung_harmony.rds")
 
 ### normalisation ###
 lung <- NormalizeData(lung, normalization.method = "LogNormalize", scale.factor = 10000)
@@ -23,8 +24,8 @@ lung <- NormalizeData(lung, normalization.method = "LogNormalize", scale.factor 
 lung <- FindVariableFeatures(lung, selection.method = "vst", nfeatures = 2000)
 
 ### scale data ###
-#lung <- ScaleData(lung)
-lung <- ScaleData(lung,vars.to.regress = "nFeature_RNA")
+lung <- ScaleData(lung)
+# lung <- ScaleData(lung,vars.to.regress = "nFeature_RNA")
 
 ### dimensionality reduction: PCA ###
 lung <- RunPCA(lung, features = VariableFeatures(object = lung))
@@ -40,7 +41,7 @@ DimPlot(object = lung, reduction = "pca", pt.size = .1, group.by = "patient.ID")
 VlnPlot(object = lung, features = "PC_1", group.by = "patient.ID", pt.size = .1)
 
 ## run harmony ##
-lung.harmony <- lung %>% RunHarmony("patient.ID", plot_convergence = TRUE)
+lung.harmony <- RunHarmony(lung, "patient.ID", plot_convergence = TRUE)
 
 ## explore harmony results ##
 DimPlot(object = lung.harmony, reduction = "harmony", pt.size = .1, group.by = "patient.ID")
@@ -52,9 +53,21 @@ png(paste0(harmony.path,"harmony.elbow.plot.png"), width=1000,height=600,units="
 print(harmony.elbow.plot)
 dev.off()
 
-## clustering ##
-# uncorrected: dims <- c(6,8,10,14,16,19)
-dims <- c(5,8,10,13,16,19)
+
+### clustering ###
+dims <- c(6,8,10,14,16,19)
+# dims <- c(5,8,10,13,16,19) # adjusted for nFeature
+## pre-selection of dimensions - visualize batch effect ##
+for(d in dims){
+  lung.harmony <- RunUMAP(lung.harmony, dims = 1:d, seed.use=1)
+  umap.batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
+  png(paste0(harmony.path, "UMAP_dim", d, "batch.png"), width=1400, height=600, units="px")
+  print(umap.batch.plot)
+  dev.off()
+}
+
+### clustering ###
+## evaluate different numbers of PCs and resolutions ##
 res <- seq(0.5,1.5,0.1)
 for(d in dims){
   lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony", dims=1:d, seed.use=1)
@@ -71,14 +84,14 @@ for(d in dims){
 }
 
 ## preliminary clustering ##
-# uncorrected:first 8 PCs, resolution 1.2
+# uncorrected:first 10 PCs, resolution 1.4
 # regress.out: first 8 PCs, resolutioin 1.0
-lung.harmony <- FindNeighbors(lung.harmony, reduction = "harmony", dims = 1:8)
-lung.harmony <- FindClusters(lung.harmony, reduction = "harmony", resolution = 1.0)
+lung.harmony <- FindNeighbors(lung.harmony, reduction = "harmony", dims = 1:10)
+lung.harmony <- FindClusters(lung.harmony, reduction = "harmony", resolution = 1.4)
 # run UMAP
-lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony", dims=1:8, seed.use=1)
+lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony", dims=1:10, seed.use=1)
 # run tSNE
-lung.harmony <- RunTSNE(lung.harmony, reduction = "harmony", dims=1:8, seed.use=1)
+lung.harmony <- RunTSNE(lung.harmony, reduction = "harmony", dims=1:10, seed.use=1)
 
 ### save data ###
 saveRDS(lung.harmony, file = paste0(harmony.path, "raredon_lung_harmony.rds"))
@@ -107,24 +120,19 @@ dev.off()
 
 ## marker gene visualization ##
 # macrophage markers
-macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1", "MARCO") #MSR1 maybe?
+macrophage.genes <- c("CSF1R", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1", "MARCO") #MSR1
 # monocyte markers
 monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 # dendritic cell markers
-dc.genes <- c("CD1C","XCR1", "CD86")
+dc.genes <- c("CD1C","XCR1", "CD86", "CCL17", "S100B", "RGS1")
 # lineage markers
 lineage.genes <- c("EPCAM", #epithelial cells
-                   "CDH5", "PECAM1", #endothelial cells
-                   "PDGFRB", "PDGFRA", "CD34", #mesenchymal cells
+                   "CDH5", "PECAM1", "VWF", "KDR", #endothelial cells
+                   "PDGFRA", "PDGFRB", "ACTA2", "MYH11", "CD34", #mesenchymal cells
                    "PTPRC", #immune cells
                    "CD3D", "GZMA", #T-cells
                    "CD79A", "CD79B" #B-cells
 )
-
-# set default essay to RNA counts
-DefaultAssay(lung.harmony) <- "RNA"
-# Normalize RNA data for visualization purposes
-lung.harmony <- NormalizeData(lung.harmony, verbose = TRUE)
 
 # feature plot with macrophage markers
 macrophage.markers <- FeaturePlot(lung.harmony, features = macrophage.genes, pt.size = 0.2, ncol = 4) & 
@@ -143,7 +151,7 @@ dev.off()
 # feature plot with DC markers
 dc.markers <- FeaturePlot(lung.harmony, features = dc.genes, pt.size = 0.2, ncol = 3) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(harmony.path,"dc.markers.png"), width=1200,height=400,units="px")
+png(paste0(harmony.path,"dc.markers.png"), width=1200,height=800,units="px")
 print(dc.markers)
 dev.off()
 
