@@ -68,6 +68,7 @@ for(d in dims){
 
 ### clustering ###
 ## evaluate different numbers of PCs and resolutions ##
+dims <- c(6,8,10) # uncorrected
 res <- seq(0.5,1.5,0.1)
 for(d in dims){
   lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony", dims=1:d, seed.use=1)
@@ -128,7 +129,7 @@ dc.genes <- c("CD1C","XCR1", "CD86", "CCL17", "S100B", "RGS1")
 # lineage markers
 lineage.genes <- c("EPCAM", #epithelial cells
                    "CDH5", "PECAM1", "VWF", "KDR", #endothelial cells
-                   "PDGFRA", "PDGFRB", "ACTA2", "MYH11", "CD34", #mesenchymal cells
+                   "PDGFRA", "PDGFRB", "ACTA2", "MYH11", #mesenchymal cells
                    "PTPRC", #immune cells
                    "CD3D", "GZMA", #T-cells
                    "CD79A", "CD79B" #B-cells
