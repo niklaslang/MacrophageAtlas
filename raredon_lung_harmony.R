@@ -129,8 +129,9 @@ dc.genes <- c("CD1C","XCR1", "CD86", "CCL17", "S100B", "RGS1")
 # lineage markers
 lineage.genes <- c("EPCAM", #epithelial cells
                    "CDH5", "PECAM1", "VWF", "KDR", #endothelial cells
-                   "PDGFRA", "PDGFRB", "ACTA2", "MYH11", #mesenchymal cells
+                   "PDGFRA", "PDGFRB", "ACTA2", "MYH11",  #mesenchymal cells - maybe "CD34"?
                    "PTPRC", #immune cells
+                   "TPSB2", "IL1RL1",#mast cells - maybe "IL1RL1"?
                    "CD3D", "GZMA", #T-cells
                    "CD79A", "CD79B" #B-cells
 )
@@ -159,6 +160,6 @@ dev.off()
 # feature plot with more general lineage markers
 lineage.markers <- FeaturePlot(lung.harmony, features = lineage.genes, pt.size = 0.2, ncol = 5) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(harmony.path,"lineage.markers.png"), width=2000,height=800,units="px")
+png(paste0(harmony.path,"lineage.markers.png"), width=1800,height=1200,units="px")
 print(lineage.markers)
 dev.off()
