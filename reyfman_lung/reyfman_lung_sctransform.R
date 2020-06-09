@@ -62,13 +62,13 @@ print(patient.clustering)
 dev.off()
 
 ## triple UMAP ##
-umap.1 <- DimPlot(lung.sctransform, reduction = "umap", label = F, pt.size = 0.1)
-umap.2 <- DimPlot(lung.sctransform, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
-umap.3 <- DimPlot(lung.sctransform, reduction = "umap", group.by = "scrublet_auto", pt.size = 0.5)
-triple.umap <- umap.1 + umap.2 + umap.3
-png(paste0(sctransform.path,"triple.umap.png"), width=1800,height=600,units="px")
-print(triple.umap)
-dev.off()
+#umap.1 <- DimPlot(lung.sctransform, reduction = "umap", label = F, pt.size = 0.1)
+#umap.2 <- DimPlot(lung.sctransform, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
+#umap.3 <- DimPlot(lung.sctransform, reduction = "umap", group.by = "scrublet_auto", pt.size = 0.5)
+#triple.umap <- umap.1 + umap.2 + umap.3
+#png(paste0(sctransform.path,"triple.umap.png"), width=1800,height=600,units="px")
+#print(triple.umap)
+#dev.off()
 
 ## QC metrics at cluster level ##
 cluster.qc.heatmap <- FeaturePlot(lung.sctransform, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), pt.size = 0.2, ncol = 3) & 

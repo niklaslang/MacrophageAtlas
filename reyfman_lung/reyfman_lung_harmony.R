@@ -89,7 +89,7 @@ lung.harmony <- RunTSNE(lung.harmony, reduction = "harmony", dims=1:10, seed.use
 saveRDS(lung.harmony, file = paste0(harmony.path, "raredon_lung_harmony.rds"))
 
 ## explore clustering at patient level ##
-patient.clustering <- DimPlot(lung.harmony, group.by = "seurat_clusters", split.by = "patient.ID", ncol = 7)
+patient.clustering <- DimPlot(lung.harmony, group.by = "seurat_clusters", split.by = "patient.ID", ncol = 4)
 png(paste0(harmony.path,"patient.clustering.png"), width=1800,height=600,units="px")
 print(patient.clustering)
 dev.off()
