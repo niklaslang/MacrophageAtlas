@@ -88,7 +88,6 @@ liver.logtransform <- RunUMAP(liver.logtransform, dims=1:8, seed.use=1)
 liver.logtransform <- RunTSNE(liver.logtransform, dims=1:8, seed.use=1)
 
 ### save data ###
-liver.logtransform$organ <- "liver"
 saveRDS(liver.logtransform, paste0(logtransform.path, "macparland_liver_logtransform.rds"))
 
 ## explore clustering at patient level ##
