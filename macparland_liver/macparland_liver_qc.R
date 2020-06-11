@@ -172,7 +172,7 @@ dev.off()
 ### remove low quality cells ###
 ### cells with mitochondrial fraction < 7%
 ### cells with < 1500 transcripts
-liver.filtered <- subset(liver, subset = nFeature_RNA > 500 & percent.mt < 7.0)
+liver.filtered <- subset(liver, subset = nFeature_RNA > 500)
 
 ### post filtering QC plots ###
 ## histograms ## 
