@@ -20,9 +20,10 @@ liver$percent.mt <- liver$percent.mito
 liver$percent.mito <- NULL
 
 ### functions ###
+# scatter plots
 QC.scatter <- function(data){
   scatter.plot <- ggplot(data[[]], aes( x = nCount_RNA, y = nFeature_RNA)) + 
-    geom_point(aes(colour = percent.mt), size = 0.5) + 
+    geom_point(aes(colour = percent.mt), size = 1) + 
     coord_cartesian(xlim = c(0.0 , 10000), ylim = c(0.0 , 10000)) +
     labs(title = "Overall QC", x  ="Count depth", y = "Unique Genes") + 
     theme(
@@ -49,7 +50,7 @@ QC.histograms <- function(data){
   histograms[[1]] <- hist1
   
   # distribution of count depth
-  hist2 <- qplot(x =data[["nCount_RNA"]]$nCount_RNA, fill=..count.., geom="histogram", binwidth = 100,
+  hist2 <- qplot(x =data[["nCount_RNA"]]$nCount_RNA, fill=..count.., geom="histogram", binwidth = 200,
                  xlab = "Count depth per cell",
                  ylab = "Frequency",
                  main = "Transcript Count Distribution")+scale_fill_gradient(low="orange", high="red")
@@ -170,8 +171,7 @@ print(percent.mt.plot2)
 dev.off()
 
 ### remove low quality cells ###
-### cells with mitochondrial fraction < 7%
-### cells with < 1500 transcripts
+### cells with < 500 features
 liver.filtered <- subset(liver, subset = nFeature_RNA > 500)
 
 ### post filtering QC plots ###
@@ -182,7 +182,7 @@ png(paste0(liver.path,"QC.filtered.histogram.png"), width=1500,height=500,units=
 print(QC.all.histograms.filtered)
 dev.off()
 
-## post filtering QC scatter plot ##
+## QC scatter plot ##
 QC.scatter.filtered <- QC.scatter(liver.filtered)
 png(paste0(liver.path,"QC.filtered.scatter.png"), width=1600,height=1000,units="px")
 print(QC.scatter.filtered)
