@@ -139,7 +139,7 @@ lineage.genes <- c("EPCAM", #epithelial cells
 # feature plot with macrophage markers
 macrophage.markers <- FeaturePlot(liver.harmony, features = macrophage.genes, pt.size = 0.2, ncol = 5) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(harmony.path,"macrophage.markers.png"), width=1600,height=800,units="px")
+png(paste0(harmony.path,"macrophage.markers.png"), width=1800,height=800,units="px")
 print(macrophage.markers)
 dev.off()
 

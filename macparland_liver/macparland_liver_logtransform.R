@@ -77,15 +77,13 @@ for(d in dims){
 
 ### definite clustering ###
 ## best (preliminary) clustering ##
-# uncorrected/adjusted: 8 first PCs, resolution XY
+# uncorrected/adjusted: 12 first PCs, resolution 0.9
 # adjusted for nFeatures: XY first PCs, resolution XY
 # adjusted for nCounts + percent.mito: XY first PCs, resolution XY
-liver.logtransform <- FindNeighbors(liver.logtransform, dims = 1:8)
-liver.logtransform <- FindClusters(liver.logtransform, resolution = 1.1)
+liver.logtransform <- FindNeighbors(liver.logtransform, dims = 1:12)
+liver.logtransform <- FindClusters(liver.logtransform, resolution = 0.9)
 # add UMAP
-liver.logtransform <- RunUMAP(liver.logtransform, dims=1:8, seed.use=1)
-# add tSNE
-liver.logtransform <- RunTSNE(liver.logtransform, dims=1:8, seed.use=1)
+liver.logtransform <- RunUMAP(liver.logtransform, dims=1:12, seed.use=1)
 
 ### save data ###
 saveRDS(liver.logtransform, paste0(logtransform.path, "macparland_liver_logtransform.rds"))
@@ -112,15 +110,16 @@ monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
 dc.genes <- c("CD1C","XCR1", "CD86", "CCL17", "S100B", "RGS1")
 # liver markers
 liver.genes <- c("ALB", "AFP", # hepatocytes
-                 "CALCRL","CD32B", # LSECs
-                 "KRT19","EPCAM", #cholangiocytes
+                 "CALCRL", # LSECs
+                 "KRT19","EPCAM","FXYD2", #cholangiocytes
                  "ACTA2","COL1A1" # Hepatic Stellate Cells
-                 )
+)
 # lineage markers
-lineage.genes <- c("EPCAM", #epithelial cells
-                   "CDH5", "PECAM1", "VWF", "KDR", #endothelial cells
-                   "PDGFRA", "PDGFRB", "ACTA2", "MYH11",  #mesenchymal cells - maybe "CD34"?
+lineage.genes <- c("PDGFRA", #mesenchymal cells
+                   "HBB", #erythroid cells
                    "PTPRC", #immune cells
+                   "CD27","IGHG1", # plasma cells
+                   "GZMK","KLRF1", #NK cells
                    "TPSB2", #mast cells - maybe "IL1RL1"?
                    "CD3D", "GZMA", #T-cells
                    "CD79A", "CD79B" #B-cells
@@ -129,7 +128,7 @@ lineage.genes <- c("EPCAM", #epithelial cells
 # feature plot with macrophage markers
 macrophage.markers <- FeaturePlot(liver.logtransform, features = macrophage.genes, pt.size = 0.2, ncol = 5) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(logtransform.path,"macrophage.markers.png"), width=1600,height=800,units="px")
+png(paste0(logtransform.path,"macrophage.markers.png"), width=1800,height=800,units="px")
 print(macrophage.markers)
 dev.off()
 
@@ -155,8 +154,8 @@ print(liver.markers)
 dev.off()
 
 # feature plot with lineage markers
-lineage.markers <- FeaturePlot(liver.logtransform, features = lineage.genes, pt.size = 0.2, ncol = 5) & 
+lineage.markers <- FeaturePlot(liver.logtransform, features = lineage.genes, pt.size = 0.2, ncol = 4) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(logtransform.path,"lineage.markers.png"), width=1500,height=500,units="px")
+png(paste0(logtransform.path,"lineage.markers.png"), width=1600,height=1200,units="px")
 print(lineage.markers)
 dev.off()
