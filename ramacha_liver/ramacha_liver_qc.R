@@ -130,7 +130,7 @@ liver <- readRDS(paste0(liver.path, "ramachandran_liver_healthy.rds"))
 # show scrublet results #
 table(liver$scrublet_auto)
 
-# remove 732 doublets #
+# remove 967 doublets #
 liver <- subset(liver, subset = scrublet_auto == FALSE)
 
 ### post doublet removal QC metrics ###
@@ -181,9 +181,9 @@ png(paste0(liver.path,"QC.scrublet.percent.mt.2.png"), width=1500,height=500,uni
 print(percent.mt.plot2)
 dev.off()
 
-### remove 6657 low quality cells ###
+### remove 8250 low quality cells ###
 ### cells with mitochondrial fraction < 30%
-### cells with < 500 feature
+### cells with < 500 features
 liver.filtered <- subset(liver, subset = nFeature_RNA > 500 & percent.mt < 30)
 
 ### post filtering QC plots ###
@@ -234,5 +234,5 @@ png(paste0(liver.path,"QC.filtered.percent.mt.2.png"), width=1500,height=500,uni
 print(percent.mt.plot2)
 dev.off()
 
-### save liver data: 36101 cells ###
-saveRDS(liver.filtered, paste0(liver.path, "ramacha_liver_filtered.rds"))
+### save liver data: 45145 cells ###
+saveRDS(liver.filtered, paste0(liver.path, "ramacha_liver_healthy_filtered.rds"))

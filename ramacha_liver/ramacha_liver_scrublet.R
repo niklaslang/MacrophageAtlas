@@ -45,9 +45,9 @@ for(i in 1:length(patient.ID)){
 }
 
 ### merge samples ###
-liver <- merge(liver.Healthy_1, c(liver.Healthy_2, liver.Healthy_3, liver.Healthy_4, liver.Healthy_5))
+liver <- merge(liver.Healthy_1, c(liver.Healthy_2, liver.Healthy_3, liver.Healthy_4, liver.Healthy_5, liver.Healthy_6, liver.Healthy_7))
 
-### show results: 732 doublets detected ###
+### show results: 967 doublets detected ###
 table(liver$scrublet_auto)
 
 ### save data ###
