@@ -10,7 +10,7 @@ options(future.globals.maxSize = 8000 * 1024^2)
 
 ### path.variables ###
 liver.path <- "/home/s1987963/ds_group/Niklas/macparland_liver/macparland_liver_filtered.rds"
-harmony.path <- "/home/s1987963/ds_group/Niklas/macparland_liver/harmony/"
+harmony.path <- "/home/s1987963/ds_group/Niklas/macparland_liver/harmony/dim17_annotation/"
 
 ### load data ###
 liver <- readRDS(liver.path)
@@ -66,21 +66,27 @@ for(d in dims){
 ## clustering ##
 #dims <- c() #adjusted for nFeatures
 # dims <- c() #adjusted for nCounts + percent.mito
-# dims <- c(6,8,9,12,14,17) # uncorrected/adjusted
+# dims <- c() # uncorrected/adjusted
 dims <- c(9,12,14,17)
 res <- seq(0.5,1.5,0.1)
 for(d in dims){
   liver.harmony <- RunUMAP(liver.harmony, reduction = "harmony", dims=1:d, seed.use=1)
+  liver.harmony <- FindNeighbors(liver.harmony, reduction = "harmony", dims = 1:d)
   
   # plot batch effect
   batch.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
+  
   for (r in res) {
-    liver.harmony <- FindNeighbors(liver.harmony, reduction = "harmony", dims = 1:d)
+    # perform clustering
     liver.harmony <- FindClusters(liver.harmony, reduction = "harmony", resolution = r)
+    
+    # plot clusters
     umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = F, pt.size = 0.1)
     
-    # create eval plot
+    # plot clusters and batch effect side by side
     eval.plot <- umap.plot + batch.plot
+    
+    # save output
     png(paste0(harmony.path, "UMAP_dim", d, "_res", r, ".png"), width=1500, height=600, units="px")
     print(eval.plot)
     dev.off()
@@ -92,7 +98,7 @@ for(d in dims){
 # adjusted for nFeatures: XY first PCs, resolution XY
 # adjusted for nCounts + percent.mito: XY first PCs, resolution
 liver.harmony <- FindNeighbors(liver.harmony, reduction = "harmony", dims = 1:17)
-liver.harmony <- FindClusters(liver.harmony, reduction = "harmony", resolution = 1)
+liver.harmony <- FindClusters(liver.harmony, reduction = "harmony", resolution = 1.0)
 # run UMAP
 liver.harmony <- RunUMAP(liver.harmony, reduction = "harmony", dims=1:17, seed.use=1)
 
@@ -100,8 +106,8 @@ liver.harmony <- RunUMAP(liver.harmony, reduction = "harmony", dims=1:17, seed.u
 saveRDS(liver.harmony, file = paste0(harmony.path, "macparland_liver_harmony.rds"))
 
 ## explore clustering at patient level ##
-patient.clustering <- DimPlot(liver.harmony, group.by = "seurat_clusters", split.by = "patient.ID", ncol = 9)
-png(paste0(harmony.path,"patient.clustering.png"), width=1600,height=400,units="px")
+patient.clustering <- DimPlot(liver.harmony, group.by = "seurat_clusters", split.by = "patient.ID", pt.size = 0.2, ncol = 5)
+png(paste0(harmony.path,"patient.clustering.png"), width=1500,height=400,units="px")
 print(patient.clustering)
 dev.off()
 
@@ -113,60 +119,164 @@ print(cluster.qc.heatmap)
 dev.off()
 
 ## marker gene visualization ##
-# macrophage markers
-macrophage.genes <- c("CSF1R", "CD68", "LYZ", "HLA-DRA", "ITGAX", "ITGAM", "C1QB","MRC1", "MARCO", "MSR1")
-# monocyte markers
-monocyte.genes <- c("CD14", "MNDA", "S100A8","S100A9")
-# dendritic cell markers
-dc.genes <- c("CD1C","XCR1", "CD86", "CCL17", "S100B", "RGS1")
-# liver markers
-liver.genes <- c("ALB", "AFP", # hepatocytes
-                 "CALCRL", # LSECs
-                 "KRT19","EPCAM","FXYD2", #cholangiocytes
-                 "ACTA2","COL1A1" # Hepatic Stellate Cells
-)
-# lineage markers
-lineage.genes <- c("EPCAM", #epithelial cells
-                   "HBB", #erythroid cells
-                   "PTPRC", #immune cells
-                   "CD27","IGHG1", # plasma cells
-                   "GZMK","KLRF1", #NK cells
-                   "TPSB2", #mast cells - maybe "IL1RL1"?
-                   "CD3D", "GZMA", #T-cells
-                   "CD79A", "CD79B" #B-cells
-)
+#MNP genes
+MNP.genes <- c("CD14", "FCGR3A","CSF1R", "CD68", "LYZ", 
+               "CCR2", "CX3CR1", "S100A8", "MARCO", "MNDA", 
+               "TIMD4", "CD163", "C1QB", "F13A1",	"MCEMP1",	
+               "TREM2",	"CD9",	"VCAN")
+# cDC 1 genes
+cDC1.genes <- c("XCR1", "CLEC10A", "FCER1A", "CLEC9A")
 
-# feature plot with macrophage markers
-macrophage.markers <- FeaturePlot(liver.harmony, features = macrophage.genes, pt.size = 0.2, ncol = 5) & 
+# cDC 2 genes 
+cDC2.genes <- c("CD1C","HLA-DRA",	"HLA-DRB1",	"CCR7",	"ITGAX",
+                "CD1E")
+
+# pDC genes 
+pDC.genes <- c("LILRA4", "IRF8",	"IRF7",	"CLEC4C")
+
+# T cells
+Tcell.genes <- c("CD3D",	"CD4",	"CD8A", "IL7R", "CD2", 
+                 "CCR7",	"LTB", "TRAC")
+
+# NK cells
+NK.genes <- c("GZMA",	"NKG7",	"XCL1",	"FGFBP2",	"GNLY",	
+              "GZMK",	"KLRF1",	"KLRC1")
+
+# B cells
+Bcell.genes <- c("CD79A", "CD79B",	"MS4A1")
+
+# plasma cells
+plasmacell.genes <- c("IGHG1", "MZB1",	"IGKC",	"JCHAIN",	"JSRP1")
+
+# mast cells
+mastcell.genes <- c("TPSB2",	"TPSAB1",	"CPA3",	"MS4A2")
+
+# erys
+ery.genes <- c("HBA1", "HBB")
+
+# epithelial cells
+epithelial.genes <- c("EPCAM",	"KRT19", "ALB", "TF",	"HNF4A",	"SFTPC")
+
+# endothelial cells
+endothelial.genes <- c("KDR",	"CD34", "VWF", "CLDN5", "PECAM1", 
+                       "ICAM2",	"PDPN",	"CLEC14A",	"MMRN1")
+
+# mesenchymal cells
+mesenchymal.genes <- c("COL1A1",	"COL3A1", "ACTA2", "MYH11",	"PDGFRA", 
+                       "PDGFRB", "RGS5",	"MSLN",	"DCN")
+
+# proliferating cells
+proliferation.genes <- c("MKI67",	"TOP2A")
+
+# feature plot with immune cell marker
+immunecell.markers <- FeaturePlot(liver.harmony, features = c("PTPRC"), pt.size = 0.5, ncol = 1) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(harmony.path,"macrophage.markers.png"), width=1800,height=800,units="px")
-print(macrophage.markers)
+png(paste0(harmony.path,"immunecell.markers.png"), width=1000,height=1000,units="px")
+print(immunecell.markers)
 dev.off()
 
-# feature plot with monocyte markers
-monocyte.markers <- FeaturePlot(liver.harmony, features = monocyte.genes, pt.size = 0.2, ncol = 2) & 
+# feature plot with MNP markers
+MNP.markers <- FeaturePlot(liver.harmony, features = MNP.genes, pt.size = 0.5, ncol = 6) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(harmony.path,"monocyte.markers.png"), width=800,height=800,units="px")
-print(monocyte.markers)
+png(paste0(harmony.path,"MNP.markers.png"), width=1800,height=900,units="px")
+print(MNP.markers)
 dev.off()
 
-# feature plot with DC markers
-dc.markers <- FeaturePlot(liver.harmony, features = dc.genes, pt.size = 0.2, ncol = 3) & 
+# feature plot with cDC 1 markers
+cDC1.markers <- FeaturePlot(liver.harmony, features = cDC1.genes, pt.size = 0.5, ncol = 4) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(harmony.path,"dc.markers.png"), width=1200,height=800,units="px")
-print(dc.markers)
+png(paste0(harmony.path,"cDC1.markers.png"), width=1600,height=400,units="px")
+print(cDC1.markers)
 dev.off()
 
-# feature plot with liver markers
-liver.markers <- FeaturePlot(liver.harmony, features = liver.genes, pt.size = 0.2, ncol = 4) & 
+# feature plot with cDC 2 markers
+cDC2.markers <- FeaturePlot(liver.harmony, features = cDC2.genes, pt.size = 0.5, ncol = 3) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(harmony.path,"liver.markers.png"), width=1600,height=800,units="px")
-print(liver.markers)
+png(paste0(harmony.path,"cDC2.markers.png"), width=1200,height=800,units="px")
+print(cDC2.markers)
 dev.off()
 
-# feature plot with lineage markers
-lineage.markers <- FeaturePlot(liver.harmony, features = lineage.genes, pt.size = 0.2, ncol = 4) & 
+# feature plot with pDC markers
+pDC.markers <- FeaturePlot(liver.harmony, features = pDC.genes, pt.size = 0.5, ncol = 4) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-png(paste0(harmony.path,"lineage.markers.png"), width=1600,height=1200,units="px")
-print(lineage.markers)
+png(paste0(harmony.path,"pDC.markers.png"), width=1600,height=400,units="px")
+print(pDC.markers)
+dev.off()
+
+# feature plot with T cell markers
+Tcell.markers <- FeaturePlot(liver.harmony, features = Tcell.genes, pt.size = 0.5, ncol = 4) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"Tcell.markers.png"), width=1600,height=800,units="px")
+print(Tcell.markers)
+dev.off()
+
+# feature plot with NK cell markers
+NK.markers <- FeaturePlot(liver.harmony, features = NK.genes, pt.size = 0.5, ncol = 4) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"NK.markers.png"), width=1600,height=800,units="px")
+print(NK.markers)
+dev.off()
+
+# feature plot with B cell markers
+Bcell.markers <- FeaturePlot(liver.harmony, features = Bcell.genes, pt.size = 0.5, ncol = 3) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"Bcell.markers.png"), width=1200,height=400,units="px")
+print(Bcell.markers)
+dev.off()
+
+# feature plot with plasma cell markers
+plasmacell.markers <- FeaturePlot(liver.harmony, features = plasmacell.genes, pt.size = 0.5, ncol = 5) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"plasmacell.markers.png"), width=1500,height=300,units="px")
+print(plasmacell.markers)
+dev.off()
+
+# feature plot with mast cell markers
+mastcell.markers <- FeaturePlot(liver.harmony, features = mastcell.genes, pt.size = 0.5, ncol = 4) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"mastcell.markers.png"), width=1600,height=400,units="px")
+print(mastcell.markers)
+dev.off()
+
+# feature plot with epithelial cell markers
+epithelial.markers <- FeaturePlot(liver.harmony, features = epithelial.genes, pt.size = 0.5, ncol = 5) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"epithelial.markers.png"), width=1500,height=400,units="px")
+print(epithelial.markers)
+dev.off()
+
+# feature plot with endothelial cell markers
+endothelial.markers <- FeaturePlot(liver.harmony, features = endothelial.genes, pt.size = 0.5, ncol = 3) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"endothelial.markers.png"), width=1200,height=1200,units="px")
+print(endothelial.markers)
+dev.off()
+
+# feature plot with mesenchymal cell markers
+mesenchymal.markers <- FeaturePlot(liver.harmony, features = mesenchymal.genes, pt.size = 0.5, ncol = 3) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"mesenchymal.markers.png"), width=1200,height=1200,units="px")
+print(mesenchymal.markers)
+dev.off()
+
+# feature plot with erythroid cell markers
+ery.markers <- FeaturePlot(liver.harmony, features = ery.genes, pt.size = 0.5, ncol = 2) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"ery.markers.png"), width=800,height=400,units="px")
+print(ery.markers)
+dev.off()
+
+# proliferating cells
+proliferation.markers <- FeaturePlot(liver.harmony, features = proliferation.genes, pt.size = 0.5, ncol = 2) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"proliferation.markers.png"), width=800,height=400,units="px")
+print(proliferation.markers)
+dev.off()
+
+## compare PTPRC expression across clusters ##
+umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = liver.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.path, "immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
 dev.off()
