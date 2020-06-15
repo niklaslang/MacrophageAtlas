@@ -277,3 +277,9 @@ immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout
 png(paste0(harmony.path, "immuneclusters.png"), width=1800,height=1200,units="px")
 print(immuneclusters.plot)
 dev.off()
+
+### compute cluster marker genes ###
+liver.markers <- FindAllMarkers(liver.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+liver.top50.markers <- liver.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(liver.markers, file = paste0(harmony.path, "ALL_marker_genes.csv"))
+write.csv(liver.top50.markers, file = paste0(harmony.path, "top50_marker_genes.csv"))
