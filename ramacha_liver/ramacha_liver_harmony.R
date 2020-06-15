@@ -11,7 +11,7 @@ options(future.globals.maxSize = 1000 * 1024^2)
 
 ### path.variables ###
 liver.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/ramacha_liver_healthy_filtered.rds"
-harmony.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/harmony/"
+harmony.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/harmony/dim13/"
 
 ### load data ###
 liver <- readRDS(liver.path)
@@ -91,11 +91,11 @@ for(d in dims){
 
 ### definite clustering ###
 ## best (preliminary) clustering ##
-# uncorrected/adjusted: 13 first PCs, resolution 0.8
+# uncorrected/adjusted: 13 first PCs, resolution 1.0
 # adjusted for nFeatures: XY first PCs, resolution XY
 # adjusted for nCounts + percent.mito: XY first PCs, resolution XY
 liver.harmony <- FindNeighbors(liver.harmony, reduction = "harmony", dims = 1:13)
-liver.harmony <- FindClusters(liver.harmony, reduction = "harmony",resolution = 0.8)
+liver.harmony <- FindClusters(liver.harmony, reduction = "harmony",resolution = 1.0)
 # add UMAP
 liver.harmony <- RunUMAP(liver.harmony, reduction = "harmony", dims=1:13, seed.use=1)
 
@@ -164,6 +164,13 @@ mesenchymal.genes <- c("COL1A1",	"COL3A1", "ACTA2", "MYH11",	"PDGFRA",
 
 # proliferating cells
 proliferation.genes <- c("MKI67",	"TOP2A")
+
+# feature plot with immune cell marker
+immunecell.markers <- FeaturePlot(liver.harmony, features = c("PTPRC"), pt.size = 0.5, ncol = 1) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+png(paste0(harmony.path,"immunecell.markers.png"), width=1000,height=1000,units="px")
+print(immunecell.markers)
+dev.off()
 
 # feature plot with MNP markers
 MNP.markers <- FeaturePlot(liver.harmony, features = MNP.genes, pt.size = 0.5, ncol = 6) & 
@@ -243,7 +250,7 @@ print(endothelial.markers)
 dev.off()
 
 # feature plot with mesenchymal cell markers
-mesecnhymal.markers <- FeaturePlot(liver.harmony, features = mesenchymal.genes, pt.size = 0.5, ncol = 3) & 
+mesenchymal.markers <- FeaturePlot(liver.harmony, features = mesenchymal.genes, pt.size = 0.5, ncol = 3) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
 png(paste0(harmony.path,"mesenchymal.markers.png"), width=1200,height=1200,units="px")
 print(mesenchymal.markers)
@@ -257,9 +264,16 @@ print(ery.markers)
 dev.off()
 
 # proliferating cells
-proliferation.markers <- FeaturePlot(liver.harmony, features = proliferation.genes, pt.size = 0.5, ncol = 3) & 
+proliferation.markers <- FeaturePlot(liver.harmony, features = proliferation.genes, pt.size = 0.5, ncol = 2) & 
   scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
 png(paste0(harmony.path,"proliferation.markers.png"), width=800,height=400,units="px")
 print(proliferation.markers)
 dev.off()
 
+## compare PTPRC expression across clusters ##
+umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = liver.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.path, "immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
+dev.off()
