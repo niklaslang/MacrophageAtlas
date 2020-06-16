@@ -11,7 +11,7 @@ options(future.globals.maxSize = 1000 * 1024^2)
 
 ### path.variables ###
 liver.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/ramacha_liver_healthy_filtered.rds"
-harmony.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/harmony/dim13/"
+harmony.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/harmony/"
 
 ### load data ###
 liver <- readRDS(liver.path)
@@ -52,6 +52,20 @@ harmony.elbow.plot <- ElbowPlot(liver.harmony, ndims = 50, reduction = "harmony"
 png(paste0(harmony.path,"harmony.elbow.plot.png"), width=1000,height=600,units="px")
 print(harmony.elbow.plot)
 dev.off()
+
+### visualize harmony coordinates ###
+lower_limit <- seq(1,43,6)
+upper_limit <- seq(6,48,6)
+for(i in 1:8){
+  png(paste0(harmony.path, "harmonyPC_", lower_limit[i], "_", upper_limit[i], ".png"), width=7,height=5,res=300,units="in")
+  print(DimHeatmap(liver.harmony, reduction = "harmony", nfeatures = 20, dims = lower_limit[i]:upper_limit[i], cells = 500, balanced = TRUE))
+  dev.off()
+}
+
+### save genes making up the PCs ### 
+sink(paste0(harmony.path, "PC_genes.txt"))
+print(liver.harmony[["harmony"]], dims = 1:40, nfeatures = 20)
+sink()
 
 ### visualize batch effect - pre-selection of dimensions ##
 dims <- c(6,8,11,13,16,20)
@@ -283,3 +297,6 @@ liver.markers <- FindAllMarkers(liver.harmony, only.pos = TRUE, min.pct = 0.25, 
 liver.top50.markers <- liver.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
 write.csv(liver.markers, file = paste0(harmony.path, "ALL_marker_genes.csv"))
 write.csv(liver.top50.markers, file = paste0(harmony.path, "top50_marker_genes.csv"))
+
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/ramacha_liver/harmony/ramachandran_liver_harmony.RData")
