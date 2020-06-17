@@ -115,8 +115,11 @@ QC.histograms <- function(data){
   return(histograms)
 }
 
-### QC metrics ###
-## QC at patient level ##
+########################
+####  HEALTHY DATA  ####
+########################
+
+### QC at patient level ###
 # unique genes per cell
 nFeature.plot1 <- VlnPlot(lung.healthy, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
 png(paste0(lung.healthy.path,"QC.raw.nFeature_RNA.1.png"), width=1500,height=500,units="px")
@@ -173,52 +176,52 @@ lung.healthy <- readRDS(paste0(lung.path, "habermann_lung_healthy.rds"))
 table(lung.healthy[[]]$scrublet_auto)
 
 ### remove doublets ###
-lung.scrublet <- subset(lung.healthy, subset = scrublet_auto == FALSE)
+lung.healthy.scrublet <- subset(lung.healthy, subset = scrublet_auto == FALSE)
 
 ### post-doublet removal QC plots ###
 ## histograms ## 
-QC.histograms.scrublet <- QC.histograms(lung.scrublet)
+QC.histograms.scrublet <- QC.histograms(lung.healthy.scrublet)
 QC.all.histograms.scrublet <- QC.histograms.scrublet[[1]]+QC.histograms.scrublet[[2]]+QC.histograms.scrublet[[3]]
 png(paste0(lung.healthy.path,"QC.scrublet.histogram.png"), width=1500,height=500,units="px")
 print(QC.all.histograms.scrublet)
 dev.off()
 
 ## post-doublet removal QC scatter plot ##
-QC.scatter.scrublet <- QC.scatter(lung.scrublet)
+QC.scatter.scrublet <- QC.scatter(lung.healthy.scrublet)
 png(paste0(lung.healthy.path,"QC.scrublet.scatter.png"), width=1600,height=1000,units="px")
 print(QC.scatter.scrublet)
 dev.off()
 
 ## post-doublet removal QC at patient level ##
 # unique genes per cell
-nFeature.plot1 <- VlnPlot(lung.scrublet, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
+nFeature.plot1 <- VlnPlot(lung.healthy.scrublet, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
 png(paste0(lung.healthy.path,"QC.scrublet.nFeature_RNA.1.png"), width=1500,height=500,units="px")
 print(nFeature.plot1)
 dev.off()
 
-nFeature.plot2 <- VlnPlot(lung.scrublet, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+nFeature.plot2 <- VlnPlot(lung.healthy.scrublet, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
 png(paste0(lung.healthy.path,"QC.scrublet.nFeature_RNA.2.png"), width=1500,height=500,units="px")
 print(nFeature.plot2)
 dev.off()
 
 # unique transcripts per cell
-nCount.plot1 <- VlnPlot(lung.scrublet, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+nCount.plot1 <- VlnPlot(lung.healthy.scrublet, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
 png(paste0(lung.healthy.path,"QC.scrublet.nCount_RNA.1.png"), width=1500,height=500,units="px")
 print(nCount.plot1)
 dev.off()
 
-nCount.plot2 <- VlnPlot(lung.scrublet, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+nCount.plot2 <- VlnPlot(lung.healthy.scrublet, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
 png(paste0(lung.healthy.path,"QC.scrublet.nCount_RNA.2.png"), width=1500,height=500,units="px")
 print(nCount.plot2)
 dev.off()
 
 # mitochondrial fraction per cell
-percent.mt.plot1 <- VlnPlot(lung.scrublet, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
+percent.mt.plot1 <- VlnPlot(lung.healthy.scrublet, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
 png(paste0(lung.healthy.path,"QC.scrublet.percent.mt.1.png"), width=1500,height=500,units="px")
 print(percent.mt.plot1)
 dev.off()
 
-percent.mt.plot2 <- VlnPlot(lung.scrublet, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+percent.mt.plot2 <- VlnPlot(lung.healthy.scrublet, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
 png(paste0(lung.healthy.path,"QC.scrublet.percent.mt.2.png"), width=1500,height=500,units="px")
 print(percent.mt.plot2)
 dev.off()
@@ -226,62 +229,225 @@ dev.off()
 ### remove low quality cells ###
 ### cells with < 500 features
 ### cells with mitochondrial fraction < 30%
-lung.filtered <- subset(lung.scrublet, subset = nFeature_RNA > 500 & percent.mt < 25)
+lung.healthy.filtered <- subset(lung.healthy.scrublet, subset = nFeature_RNA > 500 & percent.mt < 25)
 
 ### post filtering QC plots ###
 ## histograms ## 
-QC.histograms.filtered <- QC.histograms(lung.filtered)
+QC.histograms.filtered <- QC.histograms(lung.healthy.filtered)
 QC.all.histograms.filtered <- QC.histograms.filtered[[1]]+QC.histograms.filtered[[2]]+QC.histograms.filtered[[3]]
 png(paste0(lung.healthy.path,"QC.filtered.histogram.png"), width=1500,height=500,units="px")
 print(QC.all.histograms.filtered)
 dev.off()
 
 ## QC scatter plot ##
-QC.scatter.filtered <- QC.scatter(lung.filtered)
+QC.scatter.filtered <- QC.scatter(lung.healthy.filtered)
 png(paste0(lung.healthy.path,"QC.filtered.scatter.png"), width=1600,height=1000,units="px")
 print(QC.scatter.filtered)
 dev.off()
 
 ## post filtering QC at patient level ##
 # unique genes per cell
-nFeature.plot1 <- VlnPlot(lung.filtered, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
+nFeature.plot1 <- VlnPlot(lung.healthy.filtered, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
 png(paste0(lung.healthy.path,"QC.filtered.nFeature_RNA.1.png"), width=1500,height=500,units="px")
 print(nFeature.plot1)
 dev.off()
 
-nFeature.plot2 <- VlnPlot(lung.filtered, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+nFeature.plot2 <- VlnPlot(lung.healthy.filtered, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
 png(paste0(lung.healthy.path,"QC.filtered.nFeature_RNA.2.png"), width=1500,height=500,units="px")
 print(nFeature.plot2)
 dev.off()
 
 # unique transcripts per cell
-nCount.plot1 <- VlnPlot(lung.filtered, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+nCount.plot1 <- VlnPlot(lung.healthy.filtered, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
 png(paste0(lung.healthy.path,"QC.filtered.nCount_RNA.1.png"), width=1500,height=500,units="px")
 print(nCount.plot1)
 dev.off()
 
-nCount.plot2 <- VlnPlot(lung.filtered, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+nCount.plot2 <- VlnPlot(lung.healthy.filtered, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
 png(paste0(lung.healthy.path,"QC.filtered.nCount_RNA.2.png"), width=1500,height=500,units="px")
 print(nCount.plot2)
 dev.off()
 
 # mitochondrial fraction per cell
-percent.mt.plot1 <- VlnPlot(lung.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
+percent.mt.plot1 <- VlnPlot(lung.healthy.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
 png(paste0(lung.healthy.path,"QC.filtered.percent.mt.1.png"), width=1500,height=500,units="px")
 print(percent.mt.plot1)
 dev.off()
 
-percent.mt.plot2 <- VlnPlot(lung.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+percent.mt.plot2 <- VlnPlot(lung.healthy.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
 png(paste0(lung.healthy.path,"QC.filtered.percent.mt.2.png"), width=1500,height=500,units="px")
 print(percent.mt.plot2)
 dev.off()
 
 ### save data: 42922 healthy cells ###
-saveRDS(lung.filtered, paste0(lung.healthy.path, "reyfman_lung_healthy.rds"))
+saveRDS(lung.healthy.filtered, paste0(lung.healthy.path, "habermann_lung_healthy.rds"))
 
+#########################
+####  FIBROTIC DATA  ####
+#########################
 
+### QC at patient level ###
+# unique genes per cell
+nFeature.plot1 <- VlnPlot(lung.fibrotic, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.raw.nFeature_RNA.1.png"), width=1500,height=500,units="px")
+print(nFeature.plot1)
+dev.off()
 
+nFeature.plot2 <- VlnPlot(lung.fibrotic, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.raw.nFeature_RNA.2.png"), width=1500,height=500,units="px")
+print(nFeature.plot2)
+dev.off()
 
+# unique transcripts per cell
+nCount.plot1 <- VlnPlot(lung.fibrotic, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.raw.nCount_RNA.1.png"), width=1500,height=500,units="px")
+print(nCount.plot1)
+dev.off()
+
+nCount.plot2 <- VlnPlot(lung.fibrotic, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.raw.nCount_RNA.2.png"), width=1500,height=500,units="px")
+print(nCount.plot2)
+dev.off()
+
+# mitochondrial fraction per cell
+percent.mt.plot1 <- VlnPlot(lung.fibrotic, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.raw.percent.mt.1.png"), width=1500,height=500,units="px")
+print(percent.mt.plot1)
+dev.off()
+
+percent.mt.plot2 <- VlnPlot(lung.fibrotic, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.raw.percent.mt.2.png"), width=1500,height=500,units="px")
+print(percent.mt.plot2)
+dev.off()
+
+## QC histograms ##
+QC.histograms.raw <- QC.histograms(lung.fibrotic)
+QC.all.histograms.raw <- QC.histograms.raw[[1]]+QC.histograms.raw[[2]]+QC.histograms.raw[[3]]
+png(paste0(lung.fibrotic.path,"QC.raw.histogram.png"), width=1500,height=500,units="px")
+print(QC.all.histograms.raw)
+dev.off()
+
+## QC scatter plot ##
+QC.scatter.raw <- QC.scatter(lung.fibrotic)
+png(paste0(lung.fibrotic.path,"QC.raw.scatter.png"), width=1600, height=1000,units="px")
+print(QC.scatter.raw)
+dev.off()
+
+### doublet detection with scrublet ###
+# perform on personal machine #
+
+# load scrublet output #
+lung.fibrotic <- readRDS(paste0(lung.path, "habermann_lung_fibrotic.rds"))
+
+### how many doublets were detected by scrublet? ###
+table(lung.fibrotic[[]]$scrublet_auto)
+
+### remove 630 doublets ###
+lung.fibrotic.scrublet <- subset(lung.fibrotic, subset = scrublet_auto == FALSE)
+
+### post-doublet removal QC plots ###
+## histograms ## 
+QC.histograms.scrublet <- QC.histograms(lung.fibrotic.scrublet)
+QC.all.histograms.scrublet <- QC.histograms.scrublet[[1]]+QC.histograms.scrublet[[2]]+QC.histograms.scrublet[[3]]
+png(paste0(lung.fibrotic.path,"QC.scrublet.histogram.png"), width=1500,height=500,units="px")
+print(QC.all.histograms.scrublet)
+dev.off()
+
+## post-doublet removal QC scatter plot ##
+QC.scatter.scrublet <- QC.scatter(lung.fibrotic.scrublet)
+png(paste0(lung.fibrotic.path,"QC.scrublet.scatter.png"), width=1600,height=1000,units="px")
+print(QC.scatter.scrublet)
+dev.off()
+
+## post-doublet removal QC at patient level ##
+# unique genes per cell
+nFeature.plot1 <- VlnPlot(lung.fibrotic.scrublet, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.scrublet.nFeature_RNA.1.png"), width=1500,height=500,units="px")
+print(nFeature.plot1)
+dev.off()
+
+nFeature.plot2 <- VlnPlot(lung.fibrotic.scrublet, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.scrublet.nFeature_RNA.2.png"), width=1500,height=500,units="px")
+print(nFeature.plot2)
+dev.off()
+
+# unique transcripts per cell
+nCount.plot1 <- VlnPlot(lung.fibrotic.scrublet, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.scrublet.nCount_RNA.1.png"), width=1500,height=500,units="px")
+print(nCount.plot1)
+dev.off()
+
+nCount.plot2 <- VlnPlot(lung.fibrotic.scrublet, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.scrublet.nCount_RNA.2.png"), width=1500,height=500,units="px")
+print(nCount.plot2)
+dev.off()
+
+# mitochondrial fraction per cell
+percent.mt.plot1 <- VlnPlot(lung.fibrotic.scrublet, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.scrublet.percent.mt.1.png"), width=1500,height=500,units="px")
+print(percent.mt.plot1)
+dev.off()
+
+percent.mt.plot2 <- VlnPlot(lung.fibrotic.scrublet, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.scrublet.percent.mt.2.png"), width=1500,height=500,units="px")
+print(percent.mt.plot2)
+dev.off()
+
+### remove low quality cells ###
+### cells with < 500 features
+### cells with mitochondrial fraction < 30%
+lung.fibrotic.filtered <- subset(lung.fibrotic.scrublet, subset = nFeature_RNA > 500 & percent.mt < 25)
+
+### post filtering QC plots ###
+## histograms ## 
+QC.histograms.filtered <- QC.histograms(lung.fibrotic.filtered)
+QC.all.histograms.filtered <- QC.histograms.filtered[[1]]+QC.histograms.filtered[[2]]+QC.histograms.filtered[[3]]
+png(paste0(lung.fibrotic.path,"QC.filtered.histogram.png"), width=1500,height=500,units="px")
+print(QC.all.histograms.filtered)
+dev.off()
+
+## QC scatter plot ##
+QC.scatter.filtered <- QC.scatter(lung.fibrotic.filtered)
+png(paste0(lung.fibrotic.path,"QC.filtered.scatter.png"), width=1600,height=1000,units="px")
+print(QC.scatter.filtered)
+dev.off()
+
+## post filtering QC at patient level ##
+# unique genes per cell
+nFeature.plot1 <- VlnPlot(lung.fibrotic.filtered, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.filtered.nFeature_RNA.1.png"), width=1500,height=500,units="px")
+print(nFeature.plot1)
+dev.off()
+
+nFeature.plot2 <- VlnPlot(lung.fibrotic.filtered, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.filtered.nFeature_RNA.2.png"), width=1500,height=500,units="px")
+print(nFeature.plot2)
+dev.off()
+
+# unique transcripts per cell
+nCount.plot1 <- VlnPlot(lung.fibrotic.filtered, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.filtered.nCount_RNA.1.png"), width=1500,height=500,units="px")
+print(nCount.plot1)
+dev.off()
+
+nCount.plot2 <- VlnPlot(lung.fibrotic.filtered, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.filtered.nCount_RNA.2.png"), width=1500,height=500,units="px")
+print(nCount.plot2)
+dev.off()
+
+# mitochondrial fraction per cell
+percent.mt.plot1 <- VlnPlot(lung.fibrotic.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0.5)
+png(paste0(lung.fibrotic.path,"QC.filtered.percent.mt.1.png"), width=1500,height=500,units="px")
+print(percent.mt.plot1)
+dev.off()
+
+percent.mt.plot2 <- VlnPlot(lung.fibrotic.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+png(paste0(lung.fibrotic.path,"QC.filtered.percent.mt.2.png"), width=1500,height=500,units="px")
+print(percent.mt.plot2)
+dev.off()
+
+### save data: 119093 healthy cells ###
+saveRDS(lung.fibrotic.filtered, paste0(lung.fibrotic.path, "habermann_lung_fibrotic.rds"))
 
 
 
