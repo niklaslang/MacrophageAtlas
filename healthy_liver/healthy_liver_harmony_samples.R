@@ -412,7 +412,7 @@ for(d in dims){
 
 ### preliminary clustering ###
 liver.harmony <- FindNeighbors(liver.harmony, reduction = "harmony_theta2", dims = 1:50)
-liver.harmony <- FindClusters(liver.harmony, reduction = "harmony_theta2", resolution = 0.9)
+liver.harmony <- FindClusters(liver.harmony, reduction = "harmony_theta2", resolution = 1.9)
 
 # compare PTPRC expression across clusters
 umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
@@ -422,12 +422,14 @@ png(paste0(harmony.samples.path, "dim50_annotation/immuneclusters.png"), width=1
 print(immuneclusters.plot)
 dev.off()
 
+## compute cluster marker genes ###
+liver.markers <- FindAllMarkers(liver.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
+liver.top50.markers <- liver.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(liver.markers, file = paste0(harmony.samples.path, "ALL_marker_genes.csv"))
+write.csv(liver.top50.markers, file = paste0(harmony.samples.path, "top50_marker_genes.csv"))
+
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/healthy_liver/harmonize_samples/HVGs_studies/healthy_liver_harmony.RData")
+
 ### save data ###
 saveRDS(liver.harmony, paste0(harmony.samples.path, "healthy_liver_harmony_samples.rds"))
-
-
-
-
-
-
-
