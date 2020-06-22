@@ -8,7 +8,6 @@ library(ggplot2)
 library(cowplot)
 library(RColorBrewer)
 library(patchwork)
-options(future.globals.maxSize = 4000 * 1024^2)
 
 ### path variables ###
 ramachandran.liver.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/ramacha_liver_healthy_filtered.rds"
@@ -136,25 +135,24 @@ print(liver[["pca"]], dims = 1:50, nfeatures = 20)
 sink()
 
 ### integration with harmony ###
-## three integration strategies ##
+# harmonize samples
 liver.harmony <- liver %>% RunHarmony("patient.ID", theta = 2, reduction.save = "harmony_theta2", plot_convergence = TRUE) # harmonize all 12 samples independently
-saveRDS(liver.harmony, paste0(harmony.samples.path, "healthy_liver_harmony_samples.rds"))
 
 ## harmony elbow plot ##
-harmony.elbow.plot <- ElbowPlot(liver.harmony, ndims = 50, reduction = "harmony_theta4")
-png(paste0(harmony.samples.path,"harmony_theta4.elbow.plot.png"), width=1000,height=600,units="px")
+harmony.elbow.plot <- ElbowPlot(liver.harmony, ndims = 50, reduction = "harmony_theta2")
+png(paste0(harmony.samples.path,"harmony_theta2.elbow.plot.png"), width=1000,height=600,units="px")
 print(harmony.elbow.plot)
 dev.off()
 
 ## explore harmony coordinates ##
 ## visualize PCs ##
-harmony.PC1_2.samples.plot <- DimPlot(object = liver.harmony, reduction = "harmony_theta4", pt.size = .1, group.by = "patient.ID")
-png(paste0(harmony.samples.path,"harmony_theta4.PC1_2.samples.png"), width=1000,height=1000,units="px")
+harmony.PC1_2.samples.plot <- DimPlot(object = liver.harmony, reduction = "harmony_theta2", pt.size = .1, group.by = "patient.ID")
+png(paste0(harmony.samples.path,"harmony_theta2.PC1_2.samples.png"), width=1000,height=1000,units="px")
 print(harmony.PC1_2.samples.plot)
 dev.off()
 
-harmony.PC1_2.studies.plot <- DimPlot(object = liver.harmony, reduction = "harmony_theta4", pt.size = .1, group.by = "study")
-png(paste0(harmony.samples.path,"harmony_theta4.PC1_2.studies.png"), width=1000,height=1000,units="px")
+harmony.PC1_2.studies.plot <- DimPlot(object = liver.harmony, reduction = "harmony_theta2", pt.size = .1, group.by = "study")
+png(paste0(harmony.samples.path,"harmony_theta2.PC1_2.studies.png"), width=1000,height=1000,units="px")
 print(harmony.PC1_2.studies.plot)
 dev.off()
 
@@ -223,21 +221,47 @@ mesenchymal.genes <- c("COL1A1",	"COL3A1", "ACTA2", "MYH11",	"PDGFRA",
 proliferation.genes <- c("MKI67",	"TOP2A")
 
 # visualize batch effect and marker gene expression
-dims <- c(12,16,20,31,38,50) # harmonize samples
+dims <- c(10,16,22,32,41,50) # harmonize samples
 for(d in dims){
   
   # create folder
   dir.create(paste0(harmony.samples.path, "dim", d, "_annotation"))
   dim.path <- paste0(harmony.samples.path, "dim", d, "_annotation/")
+  
   # run UMAP
   liver.harmony <- RunUMAP(liver.harmony, reduction = "harmony_theta2", dims = 1:d, seed.use=1)
   
-  # plot batch effect
+  ## visualize batch effect 
+  # no.1 overview
   sample.batch.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
   study.batch.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "study", pt.size = 0.1)
-  umap.batch.plot <- sample.batch.plot + study.batch.plot
+  batch1.plot <- sample.batch.plot + study.batch.plot
   png(paste0(dim.path, "UMAP_dim", d, ".batch.png"), width=1500, height=600, units="px")
-  print(umap.batch.plot)
+  print(umap.batch1.plot)
+  dev.off()
+  
+  # no.2 - colored by patients
+  batch2.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.01)
+  png(paste0(dim.path, "UMAP_dim", d, ".patient.batch1.png"), width=1600, height=1000, units="px")
+  print(batch2.plot)
+  dev.off()
+  
+  # no.3 - split by patients
+  batch3.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "study", split.by = "patient.ID", pt.size = 0.01, ncol = 6)
+  png(paste0(dim.path, "UMAP_dim", d, ".patient.batch2.png"), width=1800, height=600, units="px")
+  print(batch3.plot)
+  dev.off()
+  
+  # no.4 - colored by study
+  batch4.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "study", pt.size = 0.01)
+  png(paste0(dim.path, "UMAP_dim", d, ".study.batch1.png"), width=1600, height=1000, units="px")
+  print(batch4.plot)
+  dev.off()
+  
+  # no.5 - split by study
+  batch5.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "study", split.by = "study", pt.size = 0.01, ncol = 2)
+  png(paste0(dim.path, "UMAP_dim", d, ".study.batch2.png"), width=1800, height=900, units="px")
+  print(batch5.plot)
   dev.off()
   
   ## QC metrics at cluster level ##
@@ -355,25 +379,31 @@ for(d in dims){
 }
 
 ### clustering ###
-dims <- c(20,50)
-res <- seq(0.1,1.5,0.1)
-plan("multiprocess", workers = 4)
+dims <- c(50)
+res <- seq(0.1,2.0,0.1)
 for(d in dims){
+  
   # set path variable
   dim.path <- paste0(harmony.samples.path, "dim", d, "_annotation/")
   
-  # visualization with UMAP
+  # calculate UMAP
   liver.harmony <- RunUMAP(liver.harmony, reduction = "harmony_theta2", dims=1:d, seed.use=1)
   
+  # construct kNN graph
+  liver.harmony <- FindNeighbors(liver.harmony, reduction = "harmony_theta2", dims = 1:d)
+  
   # plot batch effect
-  batch.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
+  sample.batch.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.01)
+  
   for (r in res) {
-    liver.harmony <- FindNeighbors(liver.harmony, reduction = "harmony_theta2", dims = 1:d)
+    # compute clusters
     liver.harmony <- FindClusters(liver.harmony, reduction = "harmony_theta2", resolution = r)
-    umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = F, pt.size = 0.1)
+    
+    # plot clusters
+    cluster.plot <- DimPlot(liver.harmony, reduction = "umap", label = F, pt.size = 0.1)
     
     # create eval plot
-    eval.plot <- umap.plot + batch.plot
+    eval.plot <- cluster.plot + sample.batch.plot
     png(paste0(dim.path, "UMAP_dim", d, "_res", r, ".png"), width=1500, height=600, units="px")
     print(eval.plot)
     dev.off()
