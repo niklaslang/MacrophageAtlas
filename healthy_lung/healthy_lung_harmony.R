@@ -42,17 +42,17 @@ lung <- merge(raredon.lung, c(reyfman.lung, habermann.lung)) #total 116233 cells
 raredon.lung <- FindVariableFeatures(raredon.lung, selection.method = "vst", nfeatures = 4000)
 reyfman.lung <- FindVariableFeatures(reyfman.lung, selection.method = "vst", nfeatures = 4000)
 habermann.lung <- FindVariableFeatures(habermann.lung, selection.method = "vst", nfeatures = 4000)
-# option 1: only consider genes that are HVGs in at least studies
-lung.HVGs <- c()
-lung.HVGs <- Reduce(append, list(VariableFeatures(raredon.lung), VariableFeatures(reyfman.lung), VariableFeatures(habermann.lung)))
-lung.HVGs <- unique(lung.HVGs[which(table(lung.HVGs) > 1)])
+## option 1: only consider genes that are HVGs in at least studies
+#lung.HVGs <- c()
+#lung.HVGs <- Reduce(append, list(VariableFeatures(raredon.lung), VariableFeatures(reyfman.lung), VariableFeatures(habermann.lung)))
+#lung.HVGs <- unique(lung.HVGs[which(table(lung.HVGs) > 1)]) # 2745 HVGs
 # option 2: only consider genes that are HVGs in all studies
-#lung.HVGs <- Reduce(intersect, list(VariableFeatures(raredon.lung), VariableFeatures(reyfman.lung), VariableFeatures(habermann.lung)))
+lung.HVGs <- Reduce(intersect, list(VariableFeatures(raredon.lung), VariableFeatures(reyfman.lung), VariableFeatures(habermann.lung))) # 1579 HVGs
 # set HVGs
 VariableFeatures(lung) <- lung.HVGs
 #set new path variable
-# harmony.samples.path <- "/home/s1987963/ds_group/Niklas/healthy_lung/harmonize_samples/HVGs_3studies/"
-harmony.samples.path <- "/home/s1987963/ds_group/Niklas/healthy_lung/harmonize_samples/HVGs_2studies/"
+harmony.samples.path <- "/home/s1987963/ds_group/Niklas/healthy_lung/harmonize_samples/HVGs_3studies/"
+#harmony.samples.path <- "/home/s1987963/ds_group/Niklas/healthy_lung/harmonize_samples/HVGs_2studies/"
 
 # remove Seurat Objects
 rm(raredon.lung)
@@ -167,8 +167,53 @@ mesenchymal.genes <- c("COL1A1",	"COL3A1", "ACTA2", "MYH11",	"PDGFRA",
 # proliferating cells
 proliferation.genes <- c("MKI67",	"TOP2A")
 
-# visualize batch effect and marker gene expression
-dims <- c(50) # harmonize samples
+# visualize batch effect
+dims <- c(10,18,31,43,50) # harmonize samples
+for(d in dims){
+  
+  # create folder
+  dir.create(paste0(harmony.samples.path, "dim", d, "_annotation"))
+  dim.path <- paste0(harmony.samples.path, "dim", d, "_annotation/")
+  
+  # run UMAP
+  lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony_theta2", dims = 1:d, seed.use=1)
+  
+  ## batch plots ##
+  # no.1 overview - by patients | by study
+  sample.batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.01)
+  study.batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", pt.size = 0.1)
+  batch1.plot <- sample.batch.plot + study.batch.plot
+  png(paste0(dim.path, "UMAP_dim", d, ".batch.png"), width=1500, height=600, units="px")
+  print(batch1.plot)
+  dev.off()
+  
+  # no.2 - colored by patients
+  batch2.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.01)
+  png(paste0(dim.path, "UMAP_dim", d, ".patient.batch1.png"), width=1600, height=1000, units="px")
+  print(batch2.plot)
+  dev.off()
+  
+  # no.3 - split by patients
+  batch3.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", split.by = "patient.ID", pt.size = 0.01, ncol = 8)
+  png(paste0(dim.path, "UMAP_dim", d, ".patient.batch2.png"), width=1600, height=1000, units="px")
+  print(batch3.plot)
+  dev.off()
+  
+  # no.4 - colored by study
+  batch4.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", pt.size = 0.01)
+  png(paste0(dim.path, "UMAP_dim", d, ".study.batch1.png"), width=1600, height=1000, units="px")
+  print(batch4.plot)
+  dev.off()
+  
+  # no.5 - split by study
+  batch5.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", split.by = "study", pt.size = 0.01, ncol = 3)
+  png(paste0(dim.path, "UMAP_dim", d, ".study.batch2.png"), width=1800, height=600, units="px")
+  print(batch5.plot)
+  dev.off()
+}
+
+# visualize marker gene expression
+dims <- c(18,43,50)
 for(d in dims){
   
   # create folder
@@ -328,7 +373,7 @@ for(d in dims){
 
 ### clustering ###
 # only for selected number of dims (for reasons of computational efficiency!)
-dims <- c(20,50)
+dims <- c(43,50)
 res <- seq(0.1,1.5,0.1)
 for(d in dims){
   
@@ -339,7 +384,7 @@ for(d in dims){
   lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony_theta2", dims=1:d, seed.use=1)
   
   # plot batch effect
-  batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.1)
+  batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", pt.size = 0.1)
   
   # create kNN graph
   lung.harmony <- FindNeighbors(lung.harmony, reduction = "harmony_theta2", dims = 1:d)
@@ -357,13 +402,13 @@ for(d in dims){
     
     # clustering at patient level
     patient.clustering <- DimPlot(lung.harmony, group.by = "seurat_clusters", split.by = "patient.ID", pt.size = 0.1, ncol = 8)
-    png(paste0(harmony.path,"UMAP_dim", d, "_res", r,"patient.clustering.png"), width=1600,height=1000,units="px")
+    png(paste0(dim.path,"UMAP_dim", d, "_res", r,".patient.clustering.png"), width=1600,height=1000,units="px")
     print(patient.clustering)
     dev.off()
     
     # clustering at study level
-    patient.clustering <- DimPlot(lung.harmony, group.by = "seurat_clusters", split.by = "study", pt.size = 0.01, ncol = 2)
-    png(paste0(harmony.path,"UMAP_dim", d, "_res", r, "study.clustering.png"), width=1800,height=800,units="px")
+    study.clustering <- DimPlot(lung.harmony, group.by = "seurat_clusters", split.by = "study", pt.size = 0.01, ncol = 3)
+    png(paste0(dim.path,"UMAP_dim", d, "_res", r, ".study.clustering.png"), width=1800,height=600,units="px")
     print(study.clustering)
     dev.off()
     
