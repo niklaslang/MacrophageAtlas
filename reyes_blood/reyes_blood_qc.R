@@ -30,9 +30,14 @@ blood <- AddMetaData( object = blood, metadata = blood.metadata$Cohort, col.name
 blood <- AddMetaData( object = blood, metadata = blood.metadata$Cell_Type, col.name = "cell_type")
 blood <- AddMetaData( object = blood, metadata = blood.metadata$Patient, col.name = "patient.ID")
 blood[["percent.mt"]] <- PercentageFeatureSet(blood, pattern = "^MT-")
+blood.harmony$organ <- "blood"
+blood.harmony$study <- "reyes_blood"
+blood.harmony$cohort <- "Boston"
+
 
 ### subset data ###
 blood.healthy <- subset(blood, subset = condition == "Control")
+blood.harmony$condition <- "healthy"
 
 ### save data ###
 saveRDS(blood.healthy, file = paste0(blood.path, "reyes_blood_healthy.rds"))
