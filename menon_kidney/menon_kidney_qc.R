@@ -10,6 +10,12 @@ library(reticulate)
 ### path.variables ###
 kidney.path <- "/home/s1987963/ds_group/Niklas/menon_kidney/"
 patient.ID <- paste0(rep("GSM41919", 24), seq(41,64,1))
+v2.chemistry <- c("GSM4191941", "GSM4191942", "GSM4191943", "GSM4191944", "GSM4191945", 
+                  "GSM4191946", "GSM4191947", "GSM4191948", "GSM4191949", "GSM4191950",
+                  "GSM4191951", "GSM4191955", "GSM4191956", "GSM4191957", "GSM4191958",
+                  "GSM4191959")
+v3.chemistry <- c("GSM4191952", "GSM4191953", "GSM4191954", "GSM4191960",
+                  "GSM4191961", "GSM4191962", "GSM4191963", "GSM4191964")
 
 ### load data ###
 # load samples samples separately #
@@ -208,10 +214,18 @@ png(paste0(kidney.path,"QC.scrublet.percent.mt.2.png"), width=1500,height=500,un
 print(percent.mt.plot2)
 dev.off()
 
+### split by chemistry ###
+kidney.v2 <- subset(kidney.scrublet, subset = patient.ID %in% v2.chemistry)
+kidney.v3 <- subset(kidney.scrublet, subset = patient.ID %in% v3.chemistry)
+
 ### remove low quality cells ###
-### cells with < 500 features
-### cells with mitochondrial fraction < 20%
-kidney.filtered <- subset(kidney.scrublet, subset = nFeature_RNA > 500 & percent.mt < 20)
+### v2 chemistry specific cut-offs: cells with < 500 features and mitochondrial fraction < 30%
+kidney.v2 <- subset(kidney.v2, subset = nFeature_RNA > 500 & percent.mt < 30) # 15220 cells
+### v3 chemistry specific cut-offs: cells with < 500 features and mitochondrial fraction < 50%
+kidney.v3 <- subset(kidney.v3, subset = nFeature_RNA > 500 & percent.mt < 50) # 10504 cells
+
+### merge data ###
+kidney.filtered <- merge(kidney.v2, kidney.v3)
 
 ### post filtering QC plots ###
 ## histograms ## 
@@ -261,5 +275,5 @@ png(paste0(kidney.path,"QC.filtered.percent.mt.2.png"), width=1500,height=500,un
 print(percent.mt.plot2)
 dev.off()
 
-### save data: 16317 healthy cells ###
+### save data: 25724 healthy cells ###
 saveRDS(kidney.filtered, paste0(kidney.path, "menon_kidney_filtered.rds"))
