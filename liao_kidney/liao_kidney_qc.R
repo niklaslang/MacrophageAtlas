@@ -150,7 +150,7 @@ kidney.scrublet <- readRDS("/home/s1987963/ds_group/Niklas/liao_kidney/liao_kidn
 ### how many doublets were detected by scrublet? ###
 table(kidney.scrublet[[]]$scrublet_auto)
 
-### remove  doublets ###
+### remove 14 doublets ###
 kidney.scrublet <- subset(kidney.scrublet, subset = scrublet_auto == FALSE)
 
 ### post-doublet removal QC plots ###
@@ -203,8 +203,8 @@ dev.off()
 
 ### remove low quality cells ###
 ### cells with < 500 features
-### cells with mitochondrial fraction < 20%
-kidney.filtered <- subset(kidney.scrublet, subset = nFeature_RNA > 500 & percent.mt < 20)
+### cells with mitochondrial fraction < 40%
+kidney.filtered <- subset(kidney.scrublet, subset = nFeature_RNA > 500 & percent.mt < 40)
 
 ### post filtering QC plots ###
 ## histograms ## 
@@ -250,9 +250,9 @@ print(percent.mt.plot1)
 dev.off()
 
 percent.mt.plot2 <- VlnPlot(kidney.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
-png(paste0(kidney.path,"QC.filtered.percent.mt.2.png"), width=1500,height=500,units="px")
+png(paste0(kidney.path,"QC.filteredpercent.mt.2.png"), width=1500,height=500,units="px")
 print(percent.mt.plot2)
 dev.off()
 
-### save data: 16317 healthy cells ###
+### save data: 22128 healthy cells ###
 saveRDS(kidney.filtered, paste0(kidney.path, "liao_kidney_filtered.rds"))
