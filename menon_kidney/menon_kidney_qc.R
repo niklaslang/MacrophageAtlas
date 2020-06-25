@@ -25,8 +25,8 @@ for(i in 1:length(patient.ID)){
   eval(parse(text=paste0("rm(", count_data, ")")))
   
   # add metadata: study/cohort
-  eval(parse(text=paste0(data,"$study <- \"stewart_kidney\"")))
-  eval(parse(text=paste0(data,"$cohort <- \"Cambridge\"")))
+  eval(parse(text=paste0(data,"$study <- \"menon_kidney\"")))
+  eval(parse(text=paste0(data,"$cohort <- \"Michigan\"")))
   
   # add metadata: organ
   eval(parse(text=paste0(data,"$organ <- \"kidney\"")))
@@ -263,7 +263,3 @@ dev.off()
 
 ### save data: 16317 healthy cells ###
 saveRDS(kidney.filtered, paste0(kidney.path, "menon_kidney_filtered.rds"))
-
-
-
-
