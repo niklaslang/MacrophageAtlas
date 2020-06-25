@@ -24,8 +24,7 @@ blood <- FindVariableFeatures(blood, selection.method = "vst", nfeatures = 2000)
 
 ### scale data ###
 blood <- ScaleData(blood) # uncorrected
-# blood <- ScaleData(blood, vars.to.regress = "nFeature_RNA") # adjusted for nFeatures
-# blood <- ScaleData(blood, vars.to.regress = c("nCount_RNA", "percent.mt")) # adjusted for nCounts + percent.mt
+#blood <- ScaleData(blood, vars.to.regress = "nCount_RNA") # adjusted for nCounts
 
 ### dimensionality reduction: PCA ###
 blood <- RunPCA(blood, features = VariableFeatures(object = blood))
@@ -36,22 +35,42 @@ png(paste0(harmony.path,"pca.elbow.plot.png"), width=1000,height=600,units="px")
 print(pca.elbow.plot)
 dev.off()
 
-## visualise PCs ##
-DimPlot(object = blood, reduction = "pca", pt.size = .1, group.by = "patient.ID")
-VlnPlot(object = blood, features = "PC_1", group.by = "patient.ID", pt.size = .1)
+# elbow plot
+pca.elbow.plot <- ElbowPlot(blood, ndims = 50, reduction = "pca")
+png(paste0(harmony.path,"pca.elbow.plot.png"), width=1000,height=600,units="px")
+print(pca.elbow.plot)
+dev.off()
+
+# visualize PCs
+PC1_2.samples.plot <- DimPlot(object = blood, reduction = "pca", pt.size = .1, group.by = "patient.ID")
+png(paste0(harmony.path,"PC1_2.samples.png"), width=1000,height=1000,units="px")
+print(PC1_2.samples.plot)
+dev.off()
+
+# save genes making up the PCs  
+sink(paste0(harmony.path, "PC_genes.txt"))
+print(blood[["pca"]], dims = 1:50, nfeatures = 20)
+sink()
 
 ## run harmony ##
 blood.harmony <- blood %>% RunHarmony("patient.ID", plot_convergence = TRUE)
 
-## explore harmony results ##
-DimPlot(object = blood.harmony, reduction = "harmony", pt.size = .1, group.by = "patient.ID")
-VlnPlot(object = blood.harmony, features = "harmony_1", group.by = "patient.ID", pt.size = .1)
-
-## harmony elbow plot ##
+# harmony elbow plot
 harmony.elbow.plot <- ElbowPlot(blood.harmony, ndims = 50, reduction = "harmony")
-png(paste0(harmony.path,"harmony.elbow.plot.png"), width=1000,height=600,units="px")
+png(paste0(harmony.path,"harmony_theta2.elbow.plot.png"), width=1000,height=600,units="px")
 print(harmony.elbow.plot)
 dev.off()
+
+# visualize harmony PCs
+harmony.PC1_2.samples.plot <- DimPlot(object = blood.harmony, reduction = "harmony", pt.size = .1, group.by = "patient.ID")
+png(paste0(harmony.path,"harmony_theta2.PC1_2.samples.png"), width=1000,height=1000,units="px")
+print(harmony.PC1_2.samples.plot)
+dev.off()
+
+# save genes making up the PCs
+sink(paste0(harmony.path, "harmony_PC_genes.txt"))
+print(blood.harmony[["harmony"]], dims = 1:50, nfeatures = 20)
+sink()
 
 ### visualize batch effect and marker gene expression ##
 # MNP genes
@@ -104,7 +123,7 @@ mesenchymal.genes <- c("COL1A1",	"COL3A1", "ACTA2", "MYH11",	"PDGFRA",
 proliferation.genes <- c("MKI67",	"TOP2A")
 
 # selected number of PCs
-dims <- c(40)
+dims <- c(12,17,30,40,50)
 for(d in dims){
   
   # create folder
@@ -122,7 +141,7 @@ for(d in dims){
   dev.off()
   
   # no.2 - split by patients
-  batch2.plot <- DimPlot(blood.harmony, reduction = "umap", group.by = NULL, split.by = "patient.ID", pt.size = 0.01, ncol = 6)
+  batch2.plot <- DimPlot(blood.harmony, reduction = "umap", group.by = "study", split.by = "patient.ID", pt.size = 0.01, ncol = 6)
   png(paste0(dim.path, "UMAP_dim", d, ".patient.batch2.png"), width=1800, height=1000, units="px")
   print(batch2.plot)
   dev.off()
