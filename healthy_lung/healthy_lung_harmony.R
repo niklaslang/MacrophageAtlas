@@ -153,8 +153,22 @@ mastcell.genes <- c("TPSB2",	"TPSAB1",	"CPA3",	"MS4A2")
 # erys
 ery.genes <- c("HBA1", "HBB")
 
+# broad lineage markers
+overview.markers <- c("PTPRC", "EPCAM", "PECAM1", "PDGFRA")
+
 # epithelial cells
-epithelial.genes <- c("EPCAM",	"KRT19", "ALB", "TF",	"HNF4A",	"SFTPC")
+epithelial.genes <- c("EPCAM",
+                      "VEGFA", "AGER", # AT I
+                      "SFTPC", # AT II
+                      "SCGB1A1", "MUC5AC", # club cells (clara cells)
+                      "FOXJ1", # ciliated
+                      "PIFO", "KCTD12", # ciliated 1
+                      "APOD", # ciliated 2
+                      "KRT5", "TP63", # basal stem cells
+                      "MUC5B", "CSF3", "SCGB3A2", # goblets (secretory cells)
+                      "CALCA", # neuroendocrine
+                      "FOXI1", "CFTR" # ionocytes
+                      )
 
 # endothelial cells
 endothelial.genes <- c("KDR",	"CD34", "VWF", "CLDN5", "PECAM1", 
@@ -162,7 +176,7 @@ endothelial.genes <- c("KDR",	"CD34", "VWF", "CLDN5", "PECAM1",
 
 # mesenchymal cells
 mesenchymal.genes <- c("COL1A1",	"COL3A1", "ACTA2", "MYH11",	"PDGFRA", 
-                       "PDGFRB", "RGS5",	"MSLN",	"DCN")
+                       "PDGFRB", "RGS5",	"MSLN",	"DCN", "WT1")
 
 # proliferating cells
 proliferation.genes <- c("MKI67",	"TOP2A")
@@ -213,131 +227,138 @@ for(d in dims){
 }
 
 # visualize marker gene expression
-dims <- c(18,43,50)
+dims <- c(50)
 for(d in dims){
   
   # create folder
-  dir.create(paste0(harmony.samples.path, "dim", d, "_annotation"))
+  #dir.create(paste0(harmony.samples.path, "dim", d, "_annotation"))
   dim.path <- paste0(harmony.samples.path, "dim", d, "_annotation/")
   
   # run UMAP
   lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony_theta2", dims = 1:d, seed.use=1)
   
-  ## batch plots ##
-  # no.1 overview - by patients | by study
-  sample.batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.01)
-  study.batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", pt.size = 0.1)
-  batch1.plot <- sample.batch.plot + study.batch.plot
-  png(paste0(dim.path, "UMAP_dim", d, ".batch.png"), width=1500, height=600, units="px")
-  print(batch1.plot)
-  dev.off()
-  
-  # no.2 - coloured by patients
-  batch2.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.01)
-  png(paste0(dim.path, "UMAP_dim", d, ".patient.batch1.png"), width=1600, height=1000, units="px")
-  print(batch2.plot)
-  dev.off()
-  
-  # no.3 - split by patients
-  batch3.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = NULL, split.by = "patient.ID", pt.size = 0.01, ncol = 8)
-  png(paste0(dim.path, "UMAP_dim", d, ".patient.batch2.png"), width=1600, height=1000, units="px")
-  print(batch3.plot)
-  dev.off()
-  
-  # no.4 - coloured by study
-  batch4.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", pt.size = 0.01)
-  png(paste0(dim.path, "UMAP_dim", d, ".study.batch1.png"), width=1600, height=1000, units="px")
-  print(batch4.plot)
-  dev.off()
-  
-  # no.5 - split by study
-  batch5.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = NULL, split.by = "study", pt.size = 0.01, ncol = 3)
-  png(paste0(dim.path, "UMAP_dim", d, ".study.batch2.png"), width=1800, height=600, units="px")
-  print(batch5.plot)
-  dev.off()
-  
-  ## QC metrics at cluster level ##
-  cluster.qc.heatmap <- FeaturePlot(lung.harmony, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), pt.size = 0.2, ncol = 3) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "cluster.qc.heatmap.png"), width=1500,height=500,units="px")
-  print(cluster.qc.heatmap)
-  dev.off()
+  ### batch plots ##
+  ## no.1 overview - by patients | by study
+  #sample.batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.01)
+  #study.batch.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", pt.size = 0.1)
+  #batch1.plot <- sample.batch.plot + study.batch.plot
+  #png(paste0(dim.path, "UMAP_dim", d, ".batch.png"), width=1500, height=600, units="px")
+  #print(batch1.plot)
+  #dev.off()
+  #
+  ## no.2 - coloured by patients
+  #batch2.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "patient.ID", pt.size = 0.01)
+  #png(paste0(dim.path, "UMAP_dim", d, ".patient.batch1.png"), width=1600, height=1000, units="px")
+  #print(batch2.plot)
+  #dev.off()
+  #
+  ## no.3 - split by patients
+  #batch3.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = NULL, split.by = "patient.ID", pt.size = 0.01, ncol = 8)
+  #png(paste0(dim.path, "UMAP_dim", d, ".patient.batch2.png"), width=1600, height=1000, units="px")
+  #print(batch3.plot)
+  #dev.off()
+  #
+  ## no.4 - coloured by study
+  #batch4.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "study", pt.size = 0.01)
+  #png(paste0(dim.path, "UMAP_dim", d, ".study.batch1.png"), width=1600, height=1000, units="px")
+  #print(batch4.plot)
+  #dev.off()
+  #
+  ## no.5 - split by study
+  #batch5.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = NULL, split.by = "study", pt.size = 0.01, ncol = 3)
+  #png(paste0(dim.path, "UMAP_dim", d, ".study.batch2.png"), width=1800, height=600, units="px")
+  #print(batch5.plot)
+  #dev.off()
+  #
+  ### QC metrics at cluster level ##
+  #cluster.qc.heatmap <- FeaturePlot(lung.harmony, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), pt.size = 0.2, ncol = 3) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "cluster.qc.heatmap.png"), width=1500,height=500,units="px")
+  #print(cluster.qc.heatmap)
+  #dev.off()
   
   ## gene expression heatmaps ##
-  # feature plot with immune cell marker
-  immunecell.markers <- FeaturePlot(lung.harmony, features = c("PTPRC"), pt.size = 0.5, ncol = 1) & 
+  # overview feature plot
+  overview.markers <- FeaturePlot(lung.harmony, features = overview.markers, pt.size = 0.5, ncol = 4) & 
     scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "immunecell.markers.png"), width=1000,height=1000,units="px")
-  print(immunecell.markers)
+  png(paste0(dim.path,"UMAP_dim", d, "overview.markers.png"), width=1600,height=500,units="px")
+  print(overview.markers)
   dev.off()
   
-  # feature plot with MNP markers
-  MNP.markers <- FeaturePlot(lung.harmony, features = MNP.genes, pt.size = 0.5, ncol = 6) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "MNP.markers.png"), width=1800,height=900,units="px")
-  print(MNP.markers)
-  dev.off()
-  
-  # feature plot with cDC 1 markers
-  cDC1.markers <- FeaturePlot(lung.harmony, features = cDC1.genes, pt.size = 0.5, ncol = 4) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "cDC1.markers.png"), width=1600,height=400,units="px")
-  print(cDC1.markers)
-  dev.off()
-  
-  # feature plot with cDC 2 markers
-  cDC2.markers <- FeaturePlot(lung.harmony, features = cDC2.genes, pt.size = 0.5, ncol = 3) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path, "UMAP_dim", d, "cDC2.markers.png"), width=1200,height=800,units="px")
-  print(cDC2.markers)
-  dev.off()
-  
-  # feature plot with pDC markers
-  pDC.markers <- FeaturePlot(lung.harmony, features = pDC.genes, pt.size = 0.5, ncol = 4) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "pDC.markers.png"), width=1600,height=400,units="px")
-  print(pDC.markers)
-  dev.off()
-  
-  # feature plot with T cell markers
-  Tcell.markers <- FeaturePlot(lung.harmony, features = Tcell.genes, pt.size = 0.5, ncol = 4) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "Tcell.markers.png"), width=1600,height=800,units="px")
-  print(Tcell.markers)
-  dev.off()
-  
-  # feature plot with NK cell markers
-  NK.markers <- FeaturePlot(lung.harmony, features = NK.genes, pt.size = 0.5, ncol = 4) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "NK.markers.png"), width=1600,height=800,units="px")
-  print(NK.markers)
-  dev.off()
-  
-  # feature plot with B cell markers
-  Bcell.markers <- FeaturePlot(lung.harmony, features = Bcell.genes, pt.size = 0.5, ncol = 3) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "Bcell.markers.png"), width=1200,height=400,units="px")
-  print(Bcell.markers)
-  dev.off()
-  
-  # feature plot with plasma cell markers
-  plasmacell.markers <- FeaturePlot(lung.harmony, features = plasmacell.genes, pt.size = 0.5, ncol = 5) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d, "plasmacell.markers.png"), width=1500,height=300,units="px")
-  print(plasmacell.markers)
-  dev.off()
-  
-  # feature plot with mast cell markers
-  mastcell.markers <- FeaturePlot(lung.harmony, features = mastcell.genes, pt.size = 0.5, ncol = 4) & 
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d,"mastcell.markers.png"), width=1600,height=400,units="px")
-  print(mastcell.markers)
-  dev.off()
+  ## feature plot with immune cell marker
+  #immunecell.markers <- FeaturePlot(lung.harmony, features = c("PTPRC"), pt.size = 0.5, ncol = 1) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "immunecell.markers.png"), width=1000,height=1000,units="px")
+  #print(immunecell.markers)
+  #dev.off()
+  #
+  ## feature plot with MNP markers
+  #MNP.markers <- FeaturePlot(lung.harmony, features = MNP.genes, pt.size = 0.5, ncol = 6) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "MNP.markers.png"), width=1800,height=900,units="px")
+  #print(MNP.markers)
+  #dev.off()
+  #
+  ## feature plot with cDC 1 markers
+  #cDC1.markers <- FeaturePlot(lung.harmony, features = cDC1.genes, pt.size = 0.5, ncol = 4) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "cDC1.markers.png"), width=1600,height=400,units="px")
+  #print(cDC1.markers)
+  #dev.off()
+  #
+  ## feature plot with cDC 2 markers
+  #cDC2.markers <- FeaturePlot(lung.harmony, features = cDC2.genes, pt.size = 0.5, ncol = 3) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path, "UMAP_dim", d, "cDC2.markers.png"), width=1200,height=800,units="px")
+  #print(cDC2.markers)
+  #dev.off()
+  #
+  ## feature plot with pDC markers
+  #pDC.markers <- FeaturePlot(lung.harmony, features = pDC.genes, pt.size = 0.5, ncol = 4) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "pDC.markers.png"), width=1600,height=400,units="px")
+  #print(pDC.markers)
+  #dev.off()
+  #
+  ## feature plot with T cell markers
+  #Tcell.markers <- FeaturePlot(lung.harmony, features = Tcell.genes, pt.size = 0.5, ncol = 4) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "Tcell.markers.png"), width=1600,height=800,units="px")
+  #print(Tcell.markers)
+  #dev.off()
+  #
+  ## feature plot with NK cell markers
+  #NK.markers <- FeaturePlot(lung.harmony, features = NK.genes, pt.size = 0.5, ncol = 4) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "NK.markers.png"), width=1600,height=800,units="px")
+  #print(NK.markers)
+  #dev.off()
+  #
+  ## feature plot with B cell markers
+  #Bcell.markers <- FeaturePlot(lung.harmony, features = Bcell.genes, pt.size = 0.5, ncol = 3) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "Bcell.markers.png"), width=1200,height=400,units="px")
+  #print(Bcell.markers)
+  #dev.off()
+  #
+  ## feature plot with plasma cell markers
+  #plasmacell.markers <- FeaturePlot(lung.harmony, features = plasmacell.genes, pt.size = 0.5, ncol = 5) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d, "plasmacell.markers.png"), width=1500,height=300,units="px")
+  #print(plasmacell.markers)
+  #dev.off()
+  #
+  ## feature plot with mast cell markers
+  #mastcell.markers <- FeaturePlot(lung.harmony, features = mastcell.genes, pt.size = 0.5, ncol = 4) & 
+  #  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  #png(paste0(dim.path,"UMAP_dim", d,"mastcell.markers.png"), width=1600,height=400,units="px")
+  #print(mastcell.markers)
+  #dev.off()
   
   # feature plot with epithelial cell markers
-  epithelial.markers <- FeaturePlot(lung.harmony, features = epithelial.genes, pt.size = 0.5, ncol = 5) & 
+  epithelial.markers <- FeaturePlot(lung.harmony, features = epithelial.genes, pt.size = 0.5, ncol = 6) & 
     scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d,"epithelial.markers.png"), width=1500,height=400,units="px")
+  png(paste0(dim.path,"UMAP_dim", d,"epithelial.markers.png"), width=1800,height=1000,units="px")
   print(epithelial.markers)
   dev.off()
   
@@ -349,9 +370,9 @@ for(d in dims){
   dev.off()
   
   # feature plot with mesenchymal cell markers
-  mesenchymal.markers <- FeaturePlot(lung.harmony, features = mesenchymal.genes, pt.size = 0.5, ncol = 3) & 
+  mesenchymal.markers <- FeaturePlot(lung.harmony, features = mesenchymal.genes, pt.size = 0.5, ncol = 5) & 
     scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
-  png(paste0(dim.path,"UMAP_dim", d,"mesenchymal.markers.png"), width=1200,height=1200,units="px")
+  png(paste0(dim.path,"UMAP_dim", d,"mesenchymal.markers.png"), width=1500,height=600,units="px")
   print(mesenchymal.markers)
   dev.off()
   
@@ -415,3 +436,21 @@ for(d in dims){
   }
 }
 
+### preliminary clustering ###
+### preliminary clustering ###
+lung.harmony <- FindNeighbors(lung.harmony, reduction = "harmony_theta2", dims = 1:43)
+lung.harmony <- FindClusters(lung.harmony, reduction = "harmony_theta2", resolution = 0.1)
+
+# compare PTPRC expression across clusters
+umap.plot <- DimPlot(lung.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = lung.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.samples.path, "dim50_annotation/immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
+dev.off()
+
+### preliminary annotation ###
+Idents(lung.harmony, cells = WhichCells(lung.harmony, idents = c(0, 3))) <- "Immune"
+Idents(lung.harmony, cells = WhichCells(lung.harmony, idents = c(1, 2))) <- "Epithelial"
+Idents(lung.harmony, cells = WhichCells(lung.harmony, idents = c(4, 6))) <- "Endothelial"
+Idents(lung.harmony, cells = WhichCells(lung.harmony, idents = c(5))) <- "Mesenchymal"
