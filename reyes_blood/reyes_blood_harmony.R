@@ -24,7 +24,6 @@ blood <- FindVariableFeatures(blood, selection.method = "vst", nfeatures = 2000)
 
 ### scale data ###
 blood <- ScaleData(blood) # uncorrected
-#blood <- ScaleData(blood, vars.to.regress = "nCount_RNA") # adjusted for nCounts
 
 ### dimensionality reduction: PCA ###
 blood <- RunPCA(blood, features = VariableFeatures(object = blood))
@@ -123,7 +122,8 @@ mesenchymal.genes <- c("COL1A1",	"COL3A1", "ACTA2", "MYH11",	"PDGFRA",
 proliferation.genes <- c("MKI67",	"TOP2A")
 
 # selected number of PCs
-dims <- c(12,17,30,40,50)
+#dims <- c(12,17,30,40,50)
+dims <- c(40)
 for(d in dims){
   
   # create folder
@@ -263,7 +263,8 @@ for(d in dims){
 
 ### clustering ###
 # only for selected number of dims (for reasons of computational efficiency!)
-dims <- c(18,40,50)
+#dims <- c(18,40,50)
+dims <- c(40)
 res <- seq(0.1,1.0,0.1)
 for(d in dims){
   
@@ -298,3 +299,31 @@ for(d in dims){
     
   }
 }
+
+### preliminary clustering ###
+blood.harmony <- FindNeighbors(blood.harmony, reduction = "harmony", dims = 1:40)
+blood.harmony <- FindClusters(blood.harmony, reduction = "harmony", resolution = 0.6)
+# run UMAP
+blood.harmony <- RunUMAP(blood.harmony, reduction = "harmony", dims = 1:40, seed.use=1)
+
+### save data ###
+saveRDS(blood.harmony, paste0(harmony.path, "reyes_blood_harmony.rds"))
+
+# compare PTPRC expression across clusters
+umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = blood.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.path, "dim40_annotation/immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
+dev.off()
+
+### compute cluster marker genes ###
+blood.markers <- FindAllMarkers(blood.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
+blood.top50.markers <- blood.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(blood.markers, file = paste0(harmony.path, "dim40_annotation/ALL_marker_genes.csv"))
+write.csv(blood.top50.markers, file = paste0(harmony.path, "dim40_annotation/top50_marker_genes.csv"))
+
+
+
+
+
