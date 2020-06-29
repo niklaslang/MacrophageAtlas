@@ -23,6 +23,8 @@ lung <- CreateSeuratObject(counts = lung.counts, project = "habermann_lung", min
 # calculate fraction of mitochondrial counts #
 lung$percent.mt <- PercentageFeatureSet(lung, pattern = "^MT-")
 lung$organ <- "lung"
+lung$study <- "habermann_lung"
+lung$cohort <- "Nashville"
 
 ### load meta data ###
 lung.metadata.dt <- fread(metadata.path, stringsAsFactors = TRUE, header = TRUE)
@@ -30,6 +32,7 @@ lung.metadata.dt <- data.table(lung.metadata.dt)
 
 # clean filtered meta data #
 lung.metadata.dt$V1 <- NULL
+lung.metadata.dt$Sample_Source <- NULL
 lung.metadata.dt$nCount_RNA <- NULL
 lung.metadata.dt$nFeature_RNA <- NULL
 lung.metadata.dt$nCount_SCT <- NULL
@@ -46,26 +49,32 @@ metadata.dt <- data.table(barcode=colnames(lung))
 metadata.dt[, sample := strsplit(barcode, "_")[[1]][1], by=barcode]
 lung.metadata.dt <- merge(metadata.dt, lung.metadata.dt, by.x = "sample", by.y = "orig.ident")
 
-# clean complete meta data #
-lung.metadata.dt$Sample_Source <- NULL
-
 # convert complete meta data #
 lung.metadata <- data.frame(lung.metadata.dt, row.names = lung.metadata.dt$barcode) # set rownames equal to cell labels
 lung.metadata$barcode <- NULL # remove barcode column
 
 # add meta data to seurat object #
-lung <- AddMetaData( object = lung, metadata = lung.metadata$condition, col.name = "condition")
-lung <- AddMetaData( object = lung, metadata = lung.metadata$Sample_Name, col.name = "patient.ID")
+# condition
+condition <- lung.metadata$condition
+names(condition) <- rownames(lung.metadata)
+lung <- AddMetaData( object = lung, metadata = condition, col.name = "condition")
+# patient IDs
+patient.IDs <- lung.metadata$Sample_Name
+names(patient.IDs) <- rownames(lung.metadata)
+lung <- AddMetaData(object = lung, metadata = patient.IDs, col.name = "patient.ID")
 
 ### split data by condition: healthy and fibrotic ###
 lung.healthy <- subset(lung, subset = condition == "healthy")
 lung.fibrotic <- subset(lung, subset = condition == "fibrotic")
+
+### clean workplace ###
+rm(lung.counts)
 rm(lung)
 
 ### save data ###
 # 56222 healthy cells #
 saveRDS(lung.healthy, paste0(lung.path, "habermann_lung_healthy.rds"))
-# 156344 fibrotic cells #4
+# 156344 fibrotic cells #
 saveRDS(lung.fibrotic, paste0(lung.path, "habermann_lung_fibrotic.rds"))
 
 ### perform QC ###
@@ -175,7 +184,7 @@ lung.healthy <- readRDS(paste0(lung.path, "habermann_lung_healthy.rds"))
 ### how many doublets were detected by scrublet? ###
 table(lung.healthy[[]]$scrublet_auto)
 
-### remove doublets ###
+### remove 937 doublets ###
 lung.healthy.scrublet <- subset(lung.healthy, subset = scrublet_auto == FALSE)
 
 ### post-doublet removal QC plots ###
@@ -228,7 +237,7 @@ dev.off()
 
 ### remove low quality cells ###
 ### cells with < 500 features
-### cells with mitochondrial fraction < 30%
+### cells with mitochondrial fraction < 25%
 lung.healthy.filtered <- subset(lung.healthy.scrublet, subset = nFeature_RNA > 500 & percent.mt < 25)
 
 ### post filtering QC plots ###
@@ -279,7 +288,7 @@ png(paste0(lung.healthy.path,"QC.filtered.percent.mt.2.png"), width=1500,height=
 print(percent.mt.plot2)
 dev.off()
 
-### save data: 42922 healthy cells ###
+### save data: 44873 healthy cells ###
 saveRDS(lung.healthy.filtered, paste0(lung.healthy.path, "habermann_lung_healthy.rds"))
 
 #########################
@@ -337,12 +346,12 @@ dev.off()
 # perform on personal machine #
 
 # load scrublet output #
-lung.fibrotic <- readRDS(paste0(lung.path, "habermann_lung_fibrotic.rds"))
+lung.fibrotic <- readRDS(paste0(lung.fibrotic.path, "habermann_lung_fibrotic.rds"))
 
 ### how many doublets were detected by scrublet? ###
 table(lung.fibrotic[[]]$scrublet_auto)
 
-### remove 630 doublets ###
+### remove 1013 doublets ###
 lung.fibrotic.scrublet <- subset(lung.fibrotic, subset = scrublet_auto == FALSE)
 
 ### post-doublet removal QC plots ###
@@ -395,7 +404,7 @@ dev.off()
 
 ### remove low quality cells ###
 ### cells with < 500 features
-### cells with mitochondrial fraction < 30%
+### cells with mitochondrial fraction < 25%
 lung.fibrotic.filtered <- subset(lung.fibrotic.scrublet, subset = nFeature_RNA > 500 & percent.mt < 25)
 
 ### post filtering QC plots ###
@@ -448,9 +457,6 @@ dev.off()
 
 ### save data: 119093 healthy cells ###
 saveRDS(lung.fibrotic.filtered, paste0(lung.fibrotic.path, "habermann_lung_fibrotic.rds"))
-
-
-
 
 
 
