@@ -8,6 +8,7 @@ library(ggplot2)
 library(cowplot)
 library(RColorBrewer)
 library(patchwork)
+library(data.table)
 
 ### path variables ###
 ramachandran.liver.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/ramacha_liver_healthy_filtered.rds"
@@ -428,8 +429,45 @@ liver.top50.markers <- liver.markers %>% group_by(cluster) %>% top_n(n = 50, wt 
 write.csv(liver.markers, file = paste0(harmony.samples.path, "ALL_marker_genes.csv"))
 write.csv(liver.top50.markers, file = paste0(harmony.samples.path, "top50_marker_genes.csv"))
 
+### cell type annotation ###
+cluster.annotation <- c("Healthy Liver NK1", "Healthy Liver KC 1","Healthy Liver LSEndo 1", "Healthy Liver CD8+ T cell 1",
+                     "Healthy Liver CD8+ T cell 2", "Healthy Liver CD4+ T cell", "Healthy Liver NK2", "Healthy Liver PVEndo",
+                     "Healthy Liver Hepatocyte 1", "Healthy Liver Hepatocyte 2", "Healthy Liver Monocyte 2", "Healthy Liver CVEndo",
+                     "Healthy Liver Mesenchyme 1", "Healthy Liver Monocyte 1", "Healthy Liver HAEndo", "Healthy Liver cDC2",
+                     "Healthy Liver Cholangiocyte", "Healthy Liver CD8+ T cell 3", "Healthy Liver Proliferating 1", "Healthy Liver Macrophage",
+                     "Healthy Liver B cell", "Healthy Liver LSEndo 2", "Healthy Liver LSEndo 3", "Healthy Liver NK3",
+                     "Healthy Liver Plasma cell 1", "Healthy Liver KC 2", "Healthy Liver Plasma cell 2", "Healthy Liver LymphEndo",
+                     "Healthy Liver cDC1", "Healthy Liver LSEndo 4", "Healthy Liver pDC", "RBC",
+                     "Healthy Liver Hepatocyte 3", "Healthy Liver Mesenchyme 2", "RBC/T cell doublets", "Healthy Liver NK4",
+                     "Healthy Liver Proliferating 2", "Endo/mac doublet", "Healthy Liver Mast cell", "Healthy Liver CCR7+ DC")
+names(cluster.annotation) <- levels(liver.harmony)
+liver.harmony <- RenameIdents(liver.harmony, cluster.annotation)
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(liver.harmony),
+                           celltype = Idents(liver.harmony))
+
+lineage.annotation <- c("NK cell","MP","Endothelia","T cell","T cell","T cell","NK cell","Endothelia",
+                        "Epithelia","Epithelia","MP","Endothelia","Mesenchyme","MP","Endothelia","MP",
+                        "Epithelia","T cell","Proliferating","MP","B cell","Endothelia","Endothelia","NK cell",
+                        "Plasma cell","MP","Plasma cell","Endothelia","MP","Endothelia","MP","Red Blood Cell",
+                        "Epithelia","Mesenchyme","Doublet","NK cell","Proliferating","Doublet","Mast cell","MP")
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+liver.harmony <- AddMetaData(liver.harmony, meta.data, col.name = "lineage")
+
 ### save R session ###
 save.image(file = "/home/s1987963/ds_group/Niklas/healthy_liver/harmonize_samples/HVGs_studies/healthy_liver_harmony.RData")
 
 ### save data ###
-saveRDS(liver.harmony, paste0(harmony.samples.path, "healthy_liver_harmony_samples.rds"))
+saveRDS(liver.harmony, "/home/s1987963/ds_group/Niklas/healthy_organs/healthy_liver_annotated.rds")
