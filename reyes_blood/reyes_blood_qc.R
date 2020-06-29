@@ -26,14 +26,26 @@ blood.metadata <- data.frame(blood.metadata, row.names = blood.metadata$NAME) # 
 blood.metadata$NAME <- NULL # remove cell label column
 
 ### add meta-data ###
-blood <- AddMetaData( object = blood, metadata = blood.metadata$Cohort, col.name = "condition")
-blood <- AddMetaData( object = blood, metadata = blood.metadata$Cell_Type, col.name = "cell_type")
-blood <- AddMetaData( object = blood, metadata = blood.metadata$Patient, col.name = "patient.ID")
+# condition
+cohort <- blood.metadata$Cohort
+names(cohort) <- rownames(blood.metadata)
+blood <- AddMetaData( object = blood, metadata = cohort, col.name = "condition")
+# cell_type
+cell_type <- blood.metadata$Cell_Type
+names(cell_type) <- rownames(blood.metadata)
+blood <- AddMetaData( object = blood, metadata = cell_type, col.name = "cell_type")
+# patient IDs
+patient.ID <- blood.metadata$Patient
+names(patient.ID) <- rownames(blood.metadata)
+blood <- AddMetaData( object = blood, metadata = patient.ID, col.name = "patient.ID")
+# mitochondrial fraction
 blood[["percent.mt"]] <- PercentageFeatureSet(blood, pattern = "^MT-")
+# organ
 blood.harmony$organ <- "blood"
+# study
 blood.harmony$study <- "reyes_blood"
+# cohort
 blood.harmony$cohort <- "Boston"
-
 
 ### subset data ###
 blood.healthy <- subset(blood, subset = condition == "Control")
