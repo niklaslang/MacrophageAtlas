@@ -4,7 +4,7 @@ library(reticulate)
 library(umap)
 library(dplyr)
 library(ggplot2)
-library(cowplot)
+library(data.table)
 library(RColorBrewer)
 library(patchwork)
 
@@ -323,7 +323,48 @@ blood.top50.markers <- blood.markers %>% group_by(cluster) %>% top_n(n = 50, wt 
 write.csv(blood.markers, file = paste0(harmony.path, "dim40_annotation/ALL_marker_genes.csv"))
 write.csv(blood.top50.markers, file = paste0(harmony.path, "dim40_annotation/top50_marker_genes.csv"))
 
+### cell type annotation ###
+cluster.annotation <- c("Healthy Blood CD14+ Monocyte 1", "Healthy Blood CD4+ T cell 1", "Healthy Blood pDC 1",
+                        "Healthy Blood NK2", "Healthy Blood CD8+ T cell 1", "Healthy Blood cDC", 
+                        "Healthy Blood B cell", "Healthy Blood NK1", "Healthy Blood CD16+ Monocyte",
+                        "Healthy Blood CD14+ Monocyte 2", "Healthy Blood CD4+ T cell 2", "RBC/NK cell doublets",
+                        "Healthy Blood pDC 2"
+                        )
+
+names(cluster.annotation) <- levels(blood.harmony)
+blood.harmony <- RenameIdents(blood.harmony, cluster.annotation)
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.path, "dim40_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(blood.harmony),
+                        celltype = Idents(blood.harmony))
+
+lineage.annotation <- c("MP","T cell","MP","NK cell",
+                        "T cell", "MP", "B cell", "NK cell", 
+                        "MP", "MP", "T cell", "Doublet", "MP"
+                        )
 
 
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+blood.harmony <- AddMetaData(blood.harmony, meta.data, col.name = "lineage")
 
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", group.by = "lineage", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.path, "dim40_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
 
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/reyes_blood/harmony/uncorrected/healthy_blood_harmony.RData")
+
+### save data ###
+saveRDS(blood.harmony, "/home/s1987963/ds_group/Niklas/healthy_organs/healthy_blood_annotated.rds")
