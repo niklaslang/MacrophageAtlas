@@ -5,7 +5,7 @@ library(reticulate)
 library(umap)
 library(dplyr)
 library(ggplot2)
-library(cowplot)
+library(data.table)
 library(RColorBrewer)
 library(patchwork)
 
@@ -387,4 +387,49 @@ for(d in dims){
   print(proliferation.markers)
   dev.off()
   
+}
+
+
+### clustering ###
+# only for selected number of dims (for reasons of computational efficiency!)
+dims <- c(36,40,50)
+res <- seq(1.5,2.0,0.1)
+for(d in dims){
+  
+  # set path variable
+  dim.path <- paste0(harmony.samples.path, "dim", d, "_annotation/")
+  
+  # visualization with UMAP
+  kidney.harmony <- RunUMAP(kidney.harmony, reduction = "harmony_theta2", dims=1:d, seed.use=1)
+  
+  # plot batch effect
+  batch.plot <- DimPlot(kidney.harmony, reduction = "umap", group.by = "study", pt.size = 0.1)
+  
+  # create kNN graph
+  kidney.harmony <- FindNeighbors(kidney.harmony, reduction = "harmony_theta2", dims = 1:d)
+  
+  for (r in res) {
+    
+    kidney.harmony <- FindClusters(kidney.harmony, reduction = "harmony_theta2", resolution = r)
+    umap.plot <- DimPlot(kidney.harmony, reduction = "umap", label = F, pt.size = 0.1)
+    
+    # create eval plot
+    eval.plot <- umap.plot + batch.plot
+    png(paste0(dim.path, "UMAP_dim", d, "_res", r, ".png"), width=1500, height=600, units="px")
+    print(eval.plot)
+    dev.off()
+    
+    # clustering at patient level
+    patient.clustering <- DimPlot(kidney.harmony, group.by = "seurat_clusters", split.by = "patient.ID", pt.size = 0.1, ncol = 6)
+    png(paste0(dim.path,"UMAP_dim", d, "_res", r,".patient.clustering.png"), width=1800,height=1500,units="px")
+    print(patient.clustering)
+    dev.off()
+    
+    # clustering at study level
+    study.clustering <- DimPlot(kidney.harmony, group.by = "seurat_clusters", split.by = "study", pt.size = 0.01, ncol = 3)
+    png(paste0(dim.path,"UMAP_dim", d, "_res", r, ".study.clustering.png"), width=1800,height=600,units="px")
+    print(study.clustering)
+    dev.off()
+    
+  }
 }
