@@ -349,7 +349,6 @@ lineage.annotation <- c("MP","T cell","MP","NK cell",
                         "MP", "MP", "T cell", "Doublet", "MP"
                         )
 
-
 lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
 meta.data <- merge(cell.data, lineage.data, by = "celltype")
 meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
