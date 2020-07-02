@@ -364,8 +364,8 @@ for(d in dims){
 
 ### clustering ###
 # only for selected number of dims (for reasons of computational efficiency!)
-dims <- c(30,40,50)
-res <- seq(0.1,1.0,0.1)
+dims <- c(40)
+res <- seq(1.1,2.0,0.1)
 for(d in dims){
   
   # set path variable
@@ -408,7 +408,7 @@ for(d in dims){
 
 ### preliminary clustering ###
 lung.harmony <- FindNeighbors(lung.harmony, reduction = "harmony_theta2", dims = 1:40)
-lung.harmony <- FindClusters(lung.harmony, reduction = "harmony_theta2", resolution = 0.7)
+lung.harmony <- FindClusters(lung.harmony, reduction = "harmony_theta2", resolution = 1.5)
 # run UMAP
 lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony_theta2", dims = 1:40, seed.use=1)
 
@@ -425,6 +425,9 @@ lung.markers <- FindAllMarkers(lung.harmony, only.pos = TRUE, min.pct = 0.25, lo
 lung.top50.markers <- lung.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
 write.csv(lung.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
 write.csv(lung.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
+
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/healthy_lung/harmonize_samples/HVGs_3studies/healthy_lung_harmony.RData")
 
 ### save data ###
 saveRDS(lung.harmony, paste0(harmony.path, "healthy_lung_harmony_samples.rds"))
