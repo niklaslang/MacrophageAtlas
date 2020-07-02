@@ -165,6 +165,9 @@ MNP.genes <- c("CD14", "FCGR3A","CSF1R", "CD68", "LYZ",
                "CCR2", "CX3CR1", "S100A8", "MARCO", "MNDA", 
                "TIMD4", "CD163", "C1QB", "F13A1",	"MCEMP1",	
                "TREM2",	"CD9",	"VCAN")
+
+MNP.kidney.genes <- c("CD14", "FCGR3A", "CSF2RA", "FCGR2A",
+                "C1QA", "RGS1", "CD52", "SEPP1")
 # cDC 1 genes
 cDC1.genes <- c("XCR1", "CLEC10A", "FCER1A", "CLEC9A")
 
@@ -296,6 +299,13 @@ for(d in dims){
   print(MNP.markers)
   dev.off()
   
+  # feature plot with kidney-specific MNP markers
+  MNP.kidney.markers <- FeaturePlot(kidney.harmony, features = MNP.kidney.genes, pt.size = 0.5, ncol = 4) & 
+    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+  png(paste0(dim.path,"UMAP_dim", d, "MNP.kidney.markers.png"), width=1600,height=800,units="px")
+  print(MNP.kidney.markers)
+  dev.off()
+  
   # feature plot with cDC 1 markers
   cDC1.markers <- FeaturePlot(kidney.harmony, features = cDC1.genes, pt.size = 0.5, ncol = 4) & 
     scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
@@ -393,7 +403,7 @@ for(d in dims){
 ### clustering ###
 # only for selected number of dims (for reasons of computational efficiency!)
 dims <- c(36,40,50)
-res <- seq(1.5,2.0,0.1)
+res <- seq(2.0,2.5,0.1)
 for(d in dims){
   
   # set path variable
@@ -433,3 +443,26 @@ for(d in dims){
     
   }
 }
+
+### preliminary clustering ###
+kidney.harmony <- FindNeighbors(kidney.harmony, reduction = "harmony_theta2", dims = 1:40)
+kidney.harmony <- FindClusters(kidney.harmony, reduction = "harmony_theta2", resolution = 2.0)
+# run UMAP
+kidney.harmony <- RunUMAP(kidney.harmony, reduction = "harmony_theta2", dims = 1:40, seed.use=1)
+
+# compare PTPRC expression across clusters
+umap.plot <- DimPlot(kidney.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = kidney.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.samples.path, "dim40_annotation/immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
+dev.off()
+
+### compute cluster marker genes ###
+kidney.markers <- FindAllMarkers(kidney.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
+kidney.top50.markers <- kidney.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(kidney.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
+write.csv(kidney.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
+
+### save data ###
+saveRDS(kidney.harmony, paste0(harmony.samples.path, "healthy_kidney_harmony.rds"))
