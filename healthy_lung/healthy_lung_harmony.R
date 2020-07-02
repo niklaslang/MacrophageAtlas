@@ -405,3 +405,26 @@ for(d in dims){
     
   }
 }
+
+### preliminary clustering ###
+lung.harmony <- FindNeighbors(lung.harmony, reduction = "harmony_theta2", dims = 1:40)
+lung.harmony <- FindClusters(lung.harmony, reduction = "harmony_theta2", resolution = 0.7)
+# run UMAP
+lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony_theta2", dims = 1:40, seed.use=1)
+
+# compare PTPRC expression across clusters
+umap.plot <- DimPlot(lung.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = lung.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.samples.path, "dim40_annotation/immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
+dev.off()
+
+### compute cluster marker genes ###
+lung.markers <- FindAllMarkers(lung.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
+lung.top50.markers <- lung.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(lung.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
+write.csv(lung.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
+
+### save data ###
+saveRDS(lung.harmony, paste0(harmony.path, "healthy_lung_harmony_samples.rds"))
