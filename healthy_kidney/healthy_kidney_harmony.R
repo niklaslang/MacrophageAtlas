@@ -464,5 +464,53 @@ kidney.top50.markers <- kidney.markers %>% group_by(cluster) %>% top_n(n = 50, w
 write.csv(kidney.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
 write.csv(kidney.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
 
+### cell type annotation ###
+cluster.annotation <- c("Healthy Kidney PCT 1", "Healthy Kidney PCT 2", "Healthy Kidney PCT 3", "Healthy Kidney PCT 4", 
+                        "Healthy Kidney Distinct PCT 2", "Healthy Kidney PCT 5", "Healthy Kidney T cell", 
+                        "Healthy Kidney Thick Ascending LOH 1", "Healthy Kidney PCT 6", "Healthy Kidney Intercalated Cell Type A", 
+                        "Healthy Kidney Thick Ascending LOH 2", "Healthy Kidney Connecting Tubule 1", "Healthy Kidney Connecting Tubule 2", 
+                        "Healthy Kidney Principal Cell", "Healthy Kidney NK", "Healthy Kidney Endo 1", "Healthy Kidney Intercalated Cell", 
+                        "Healthy Kidney Thick Ascending LOH 3", "Healthy Kidney Thick Ascending LOH 4", "Healthy Kidney Monocyte/cDC", 
+                        "Healthy Kidney Glomerular Endo", "Healthy Kidney Epithelial Progenitor", "Healthy Kidney Mesenchyme 1", 
+                        "Healthy Kidney Macrophage", "Healthy Kidney Capillary Endo", "Healthy Kidney Intercalated Cell Type B", 
+                        "Healthy Kidney Pelvic Epithelium", "Healthy Kidney Podocyte", "Healthy Kidney Distinct PCT 1", 
+                        "Healthy Kidney PCT 7", "Healthy Kidney PCT 8", "Healthy Kidney PCT 9"
+                        )
+
+names(cluster.annotation) <- levels(kidney.harmony)
+kidney.harmony <- RenameIdents(kidney.harmony, cluster.annotation)
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(kidney.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim40_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(kidney.harmony),
+                        celltype = Idents(kidney.harmony))
+
+lineage.annotation <- c("Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "T cell", "Epithelia", 
+                        "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "NK cell", "Endothelia",
+                        "Epithelia", "Epithelia", "Epithelia", "MP", "Endothelia", "Epithelia", "Mesenchyme", "MP", "Endothelia",
+                        "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia"
+                        )
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+kidney.harmony <- AddMetaData(kidney.harmony, meta.data, col.name = "lineage")
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(kidney.harmony, reduction = "umap", group.by = "lineage", label = T, label.size = 10, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim40_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/healthy_kidney/harmonize_samples/HVGs_3studies/healthy_kidney_harmony.RData")
+
 ### save data ###
-saveRDS(kidney.harmony, paste0(harmony.samples.path, "healthy_kidney_harmony.rds"))
+saveRDS(kidney.harmony, "/home/s1987963/ds_group/Niklas/healthy_organs/healthy_kidney_annotated.rds")
