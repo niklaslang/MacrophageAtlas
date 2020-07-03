@@ -5,6 +5,7 @@ library(reticulate)
 library(umap)
 library(dplyr)
 library(ggplot2)
+library(data.table)
 library(RColorBrewer)
 library(patchwork)
 
@@ -426,8 +427,57 @@ lung.top50.markers <- lung.markers %>% group_by(cluster) %>% top_n(n = 50, wt = 
 write.csv(lung.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
 write.csv(lung.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
 
+### cell type annotation ###
+cluster.annotation <- c("Healthy Lung Alveolar Macrophage 1", "Healthy Lung ATII 1", "Healthy Lung ATII 2", 
+                        "Healthy Lung Macrophage 1", "Healthy Lung Macrophage 2", "Healthy Lung Monocyte", 
+                        "Healthy Lung T cell", "Helathy Lung Club Cell", "Healthy Lung NK 1", "Healthy Lung Ciliated 1",
+                        "Healthy Lung ATI", "Healthy Lung Cap Endo 1", "Healthy Lung cDC", "Healthy Lung Mesenchyme 2",
+                        "Healthy Lung NK 2", "Healthy Lung Proliferating 1", "Healthy Lung Goblet", "Healthy Lung LymphEndo", 
+                        "Healthy Lung ArtEndo", "Healthy Lung Venous/Peribronchial Endo", "Healthy Lung Cap Endo 2", 
+                        "Healthy Lung Macrophage 3", "Healthy Lung Ciliated 2", "Healthy Lung Mast cell", "Healthy Lung B cell", 
+                        "Healthy Lung Plasma cell", "Healthy Lung Mesenchyme 1", "Healthy Lung Macrophage 4", "Healthy Lung ATII 3", 
+                        "Healthy Lung ATII 4", "Healthy Lung Macrophage 5", "NK/MP doublets", "Healthy Lung Macrophage 6", 
+                        "Healthy Lung Basal Cell", "Healthy Lung ATII 5", "Healthy Lung Macrophage 7", "Endo/mac doublet",
+                        "NK/Epithelial doublets", "Healthy Lung Alveolar Macrophage 2", "Mes/mac doublet", 
+                        "Healthy Lung Alveolar Macrophage 3", "Endo/Ep Doublet", "B cell/Ep Doublet"
+                        )
+
+names(cluster.annotation) <- levels(lung.harmony)
+lung.harmony <- RenameIdents(lung.harmony, cluster.annotation)
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(lung.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim40_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(lung.harmony),
+                        celltype = Idents(lung.harmony))
+
+lineage.annotation <- c("MP", "Epithelia", "Epithelia", "MP","MP", "MP","T cell", "Epithelia",
+                        "NK cell", "Epithelia", "Epithelia", "Endothelia","MP", "Mesenchyme","NK cell",
+                        "Proliferating", "Epithelia", "Endothelia", "Endothelia", "Endothelia", "Endothelia", 
+                        "MP", "Epithelia", "Mast cell", "B cell", "Plasma cell", "Mesenchyme", "MP", "Epithelia", 
+                        "Epithelia", "MP", "Doublet", "MP", "Epithelia", "Epithelia", "MP", "Doublet",
+                        "Doublet", "MP", "Doublet", "MP", "Doublet", "Doublet"
+                        )
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+lung.harmony <- AddMetaData(lung.harmony, meta.data, col.name = "lineage")
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(lung.harmony, reduction = "umap", group.by = "lineage", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim40_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
 ### save R session ###
 save.image(file = "/home/s1987963/ds_group/Niklas/healthy_lung/harmonize_samples/HVGs_3studies/healthy_lung_harmony.RData")
 
 ### save data ###
-saveRDS(lung.harmony, paste0(harmony.path, "healthy_lung_harmony_samples.rds"))
+saveRDS(blood.harmony, "/home/s1987963/ds_group/Niklas/healthy_organs/healthy_lung_annotated.rds")
