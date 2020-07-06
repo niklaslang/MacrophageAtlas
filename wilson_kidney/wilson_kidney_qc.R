@@ -36,7 +36,6 @@ for(i in 1:length(patient.ID)){
   } else if (substr(patient.ID[i],12,14) == "dia"){
     eval(parse(text=paste0(data,"$condition <- \"diabetes\"")))
   }
-  eval(parse(text=paste0(data,"$condition <- \"healthy\"")))
   
   # add metadata: patient ID
   eval(parse(text=paste0(data,"$patient.ID <- \"", patient.ID[i], "\"")))
