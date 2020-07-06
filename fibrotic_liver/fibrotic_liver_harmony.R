@@ -49,7 +49,7 @@ sink()
 
 ### integration with harmony ###
 # harmonize samples
-liver.harmony <- liver %>% RunHarmony("patient.ID", theta = 2, reduction.save = "harmony_theta2", plot_convergence = TRUE) # harmonize all 12 samples independently
+liver.harmony <- liver %>% RunHarmony("patient.ID", theta = 2, reduction.save = "harmony_theta2", plot_convergence = TRUE) # harmonize all 5 samples
 
 ## harmony elbow plot ##
 harmony.elbow.plot <- ElbowPlot(liver.harmony, ndims = 50, reduction = "harmony_theta2")
@@ -68,6 +68,9 @@ dev.off()
 sink(paste0(harmony.samples.path, "harmony_PC_genes.txt"))
 print(liver.harmony[["harmony_theta2"]], dims = 1:50, nfeatures = 20)
 sink()
+
+### save data ###
+saveRDS(liver.harmony, paste0(harmony.samples.path, "fibrotic_liver_harmony.rds"))
 
 ### explore different numbers of harmony PCs ###
 # overview markers
@@ -309,4 +312,28 @@ for(d in dims){
     
   }
 }
+
+### preliminary clustering ###
+liver.harmony <- FindNeighbors(liver.harmony, reduction = "harmony_theta2", dims = 1:50)
+liver.harmony <- FindClusters(liver.harmony, reduction = "harmony_theta2", resolution = 2.1)
+# run UMAP
+liver.harmony <- RunUMAP(liver.harmony, reduction = "harmony_theta2", dims=1:50, seed.use=1)
+
+# compare PTPRC expression across clusters
+umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = liver.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.samples.path, "dim50_annotation/immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
+dev.off()
+
+## compute cluster marker genes ###
+liver.markers <- FindAllMarkers(liver.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
+liver.top50.markers <- liver.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(liver.markers, file = paste0(harmony.samples.path, "dim50_annotation/ALL_marker_genes.csv"))
+write.csv(liver.top50.markers, file = paste0(harmony.samples.path, "dim50_annotation/top50_marker_genes.csv"))
+
+
+
+
 
