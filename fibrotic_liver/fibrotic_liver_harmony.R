@@ -333,6 +333,67 @@ liver.top50.markers <- liver.markers %>% group_by(cluster) %>% top_n(n = 50, wt 
 write.csv(liver.markers, file = paste0(harmony.samples.path, "dim50_annotation/ALL_marker_genes.csv"))
 write.csv(liver.top50.markers, file = paste0(harmony.samples.path, "dim50_annotation/top50_marker_genes.csv"))
 
+### cell type annotation ###
+cluster.annotation <- c("Fibrotic Liver CD4+ T cell 1", "Fibrotic Liver CD4+ T cell 2", "Fibrotic Liver NK1",
+                        "Fibrotic Liver CD8+ T cell 1", "Fibrotic Liver CD8+ T cell 2", "Fibrotic Liver Endo 1",
+                        "Fibrotic Liver NK2", "Fibrotic Liver Endo 2", "Fibrotic Liver Cholangiocyte 1", 
+                        "Fibrotic Liver Macrophage 1", "Fibrotic Liver B cell 1", "Fibrotic Liver Cholangiocyte 2", 
+                        "Fibrotic Liver CTLA4+ T cell", "Fibrotic Liver Monocyte 2", "Fibrotic Liver Macrophage 2", 
+                        "Fibrotic Liver Endo 3", "Fibrotic Liver Monocyte 1", "Fibrotic Liver HAEndo", 
+                        "Fibrotic Liver cDC", "Fibrotic Liver B cell 2", "Fibrotic Liver KC 1", 
+                        "Fibrotic Liver CD8+ T cell 3", "Fibrotic Liver Endo 4", "Fibrotic Liver Plasma cell 1", 
+                        "Fibrotic Liver Mesenchyme 1", "Fibrotic Liver Hepatocyte 1", "Fibrotic Liver Proliferating 1", 
+                        "Fibrotic Liver LymphEndo", "Fibrotic Liver LSEndo 1", "Fibrotic Liver Mesenchyme 2", 
+                        "Fibrotic Liver pDC", "Fibrotic Liver NK3", "Fibrotic Liver Mesenchyme 3", 
+                        "Fibrotic Liver Endo 5", "Fibrotic Liver IFN primed T cell", "Fibrotic Liver Mast cell",
+                        "Fibrotic Liver Cholangiocyte 3"
+)
+
+names(cluster.annotation) <- levels(liver.harmony)
+liver.harmony <- RenameIdents(liver.harmony, cluster.annotation)
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(liver.harmony),
+                        celltype = Idents(liver.harmony))
+
+lineage.annotation <- c("T cell" ,"T cell" ,"NK cell" ,"T cell" ,"T cell" ,"Endothelia" ,"NK cell",
+                        "Endothelia" ,"Epithelia" ,"MP" ,"B cell" ,"Epithelia" ,"T cell",
+                        "MP","MP","Endothelia","MP","Endothelia","MP", "B cell",
+                        "MP", "T cell", "Endothelia", "Plasma cell", "Mesenchyme", "Epithelia", "Proliferating",
+                        "Endothelia", "Endothelia", "Mesenchyme", "MP", "NK cell", "Mesenchyme", "Endothelia",
+                        "T cell", "Mast cell", "Epithelia"
+)
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+liver.harmony <- AddMetaData(liver.harmony, meta.data, col.name = "lineage")
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "lineage", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/fibrotic_liver/harmonize_samples/fibrotic_liver_harmony.RData")
+
+### save data ###
+saveRDS(liver.harmony, "/home/s1987963/ds_group/Niklas/fibrotic_organs/fibrotic_liver_annotated.rds")
+
+
+
+
+
+
 
 
 
