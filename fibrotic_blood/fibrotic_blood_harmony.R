@@ -331,3 +331,56 @@ blood.markers <- FindAllMarkers(blood.harmony, only.pos = TRUE, min.pct = 0.25, 
 blood.top50.markers <- blood.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
 write.csv(blood.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
 write.csv(blood.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
+
+## compute cluster marker genes ###
+blood.markers <- FindAllMarkers(blood.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
+blood.top50.markers <- blood.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(blood.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
+write.csv(blood.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
+
+### cell type annotation ###
+cluster.annotation <- c("Fibrotic Blood CD14+ Monocyte 1", "Fibrotic Blood CD4+ T cell 1", "Fibrotic Blood CD4+ T cell 2",
+                        "Fibrotic Blood CD16+ Monocyte", "Fibrotic Blood NK2", "Fibrotic Blood CD8+ T cell 1", 
+                        "Fibrotic Blood NK1", "Fibrotic Blood CD4+ T cell 3", "Fibrotic Blood B cell",
+                        "Fibrotic Blood CD14+ Monocyte 2", "Fibrotic Blood cDC", "Fibrotic Blood pDC",
+                        "Fibrotic blood proliferating", "Fibrotic blood platelet", "Fibrotic Blood CD4+ IFN primed T cell",
+                        "Fibrotic blood HSPC", "Fibrotic Blood RBC"
+)
+
+names(cluster.annotation) <- levels(blood.harmony)
+blood.harmony <- RenameIdents(blood.harmony, cluster.annotation)
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(blood.harmony),
+                        celltype = Idents(blood.harmony))
+
+lineage.annotation <- c("MP", "T cell", "T cell", "MP", "NK cell", 
+                        "T cell", "NK cell", "T cell", "B cell", "MP", 
+                        "MP", "MP", "Proliferating", "Platelet", "T cell",
+                        "Progenitor cell", "Red blood cell"
+)
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+blood.harmony <- AddMetaData(blood.harmony, meta.data, col.name = "lineage")
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", group.by = "lineage", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim40_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/fibrotic_blood/harmonize_samples/fibrotic_blood_harmony.RData")
+
+### save data ###
+saveRDS(blood.harmony, "/home/s1987963/ds_group/Niklas/fibrotic_organs/fibrotic_blood_annotated.rds")
