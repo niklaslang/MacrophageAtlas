@@ -455,15 +455,5 @@ png(paste0(lung.fibrotic.path,"QC.filtered.percent.mt.2.png"), width=1500,height
 print(percent.mt.plot2)
 dev.off()
 
-### save data: 119093 fibrotic cells ###
-saveRDS(lung.fibrotic.filtered, paste0(lung.fibrotic.path, "habermann_lung_fibrotic.rds"))
-
-
-
-
-
-
-
-
-
-
+### save data: 116108  fibrotic cells ###
+saveRDS(lung.fibrotic.filtered, paste0(lung.fibrotic.path, "habermann_lung_fibrotic_filtered.rds"))
