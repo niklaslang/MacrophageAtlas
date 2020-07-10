@@ -258,7 +258,7 @@ liver.fibrotic <- subset(liver.fibrotic, subset = source == "Tissue")
 
 ### add meta data ###
 liver.fibrotic$organ <- "liver"
-liver.fibrotic$condition <- "healthy"
+liver.fibrotic$condition <- "fibrotic"
 liver.fibrotic$percent.mt <- liver.fibrotic$percent.mito
 liver.fibrotic$percent.mito <- NULL
 liver.fibrotic$patient.ID <- liver.fibrotic$sample
