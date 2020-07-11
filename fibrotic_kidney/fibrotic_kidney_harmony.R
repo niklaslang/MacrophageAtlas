@@ -335,3 +335,77 @@ for(d in dims){
     
   }
 }
+
+### preliminary clustering ###
+kidney.harmony <- FindNeighbors(kidney.harmony, reduction = "harmony_theta2", dims = 1:37)
+kidney.harmony <- FindClusters(kidney.harmony, reduction = "harmony_theta2", resolution = 1.5)
+# run UMAP
+kidney.harmony <- RunUMAP(kidney.harmony, reduction = "harmony_theta2", dims = 1:37, seed.use=1)
+
+### save data ###
+saveRDS(kidney.harmony, paste0(harmony.samples.path, "fibrotic_kidney_harmony.rds"))
+
+# compare PTPRC expression across clusters
+umap.plot <- DimPlot(kidney.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = kidney.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.samples.path, "dim37_annotation/immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
+dev.off()
+
+### compute cluster marker genes ###
+kidney.markers <- FindAllMarkers(kidney.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
+kidney.top50.markers <- kidney.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(kidney.markers, file = paste0(harmony.samples.path, "dim37_annotation/ALL_marker_genes.csv"))
+write.csv(kidney.top50.markers, file = paste0(harmony.samples.path, "dim37_annotation/top50_marker_genes.csv"))
+
+### cell type annotation ###
+cluster.annotation <- c("Fibrotic Kidney Thick Ascending LOH 2", "Fibrotic Kidney Thick Ascending LOH 1", "Fibrotic Kidney Connecting Tubule 2",
+                        "Fibrotic Kidney Principal Cell", "Fibrotic Kidney PCT 1", "Fibrotic Kidney PCT 2", "Fibrotic Kidney Distinct PCT 2",
+                        "Fibrotic Kidney Intercalated Cell Type A", "Fibrotic Kidney Thick Ascending LOH 3", "Fibrotic Kidney Principal Cell 2",
+                        "Fibrotic Kidney Intercalated Cell Type B", "Fibrotic Kidney Thick Ascending LOH 4", "Fibrotic Kidney Principal Cell 3", 
+                        "Fibrotic Kidney Podocyte", "Fibrotic Kidney Principal Cell 4", "Fibrotic Kidney Mesenchyme 1", "Fibrotic Kidney Epithelial Progenitor 1",
+                        "Fibrotic Kidney Epithelial Progenitor 2", "Fibrotic Kidney Endo 1", "Fibrotic Kidney Pelvic Epithelium", 
+                        "Fibrotic Kidney Glomerular Endo", "Fibrotic Kidney Capillary Endo", "Fibrotc Kidney T cell", "Fibrotic Kidney Intercalated Cell",
+                        "Fibrotic Kidney B Cell", "Fibrotic Kidney Macrophage/cDC", "Fibrotic Kidney PCT 3", "Fibotic Kidney Plasma cell",
+                        "Fibrotic Kidney Endo 2"
+)
+
+names(cluster.annotation) <- levels(kidney.harmony)
+kidney.harmony <- RenameIdents(kidney.harmony, cluster.annotation)
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(kidney.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim37_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(kidney.harmony),
+                        celltype = Idents(kidney.harmony))
+
+lineage.annotation <- c("Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia",
+                        "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia",
+                        "Epithelia", "Epithelia ", "Epithelia", "Mesenchyme", "Epithelia", "Epithelia",
+                        "Endothelia", "Epithelia", "Endothelia", "Endothelia", "T cell", "Epithelia",
+                        "B cell", "MP", "Epithelia", "Plasma Cell", "Endothelia"
+)
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+kidney.harmony <- AddMetaData(kidney.harmony, meta.data, col.name = "lineage")
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(kidney.harmony, reduction = "umap", group.by = "lineage", label = T, label.size = 10, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim37_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/fibrotic_kidney/harmonize_samples/fibrotic_kidney_harmony.RData")
+
+### save data ###
+saveRDS(kidney.harmony, "/home/s1987963/ds_group/Niklas/fibrotic_organs/fibrotic_kidney_annotated.rds")
