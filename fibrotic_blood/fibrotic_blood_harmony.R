@@ -332,13 +332,8 @@ blood.top50.markers <- blood.markers %>% group_by(cluster) %>% top_n(n = 50, wt 
 write.csv(blood.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
 write.csv(blood.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
 
-## compute cluster marker genes ###
-blood.markers <- FindAllMarkers(blood.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
-blood.top50.markers <- blood.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
-write.csv(blood.markers, file = paste0(harmony.samples.path, "dim40_annotation/ALL_marker_genes.csv"))
-write.csv(blood.top50.markers, file = paste0(harmony.samples.path, "dim40_annotation/top50_marker_genes.csv"))
-
 ### cell type annotation ###
+# annotate cells
 cluster.annotation <- c("Fibrotic Blood CD14+ Monocyte 1", "Fibrotic Blood CD4+ T cell 1", "Fibrotic Blood CD4+ T cell 2",
                         "Fibrotic Blood CD16+ Monocyte", "Fibrotic Blood NK2", "Fibrotic Blood CD8+ T cell 1", 
                         "Fibrotic Blood NK1", "Fibrotic Blood CD4+ T cell 3", "Fibrotic Blood B cell",
@@ -350,9 +345,16 @@ cluster.annotation <- c("Fibrotic Blood CD14+ Monocyte 1", "Fibrotic Blood CD4+ 
 names(cluster.annotation) <- levels(blood.harmony)
 blood.harmony <- RenameIdents(blood.harmony, cluster.annotation)
 
+# add cell types to meta data
+cell.data <- data.table(barcode = colnames(blood.harmony),
+                        celltype = Idents(blood.harmony))
+cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
+cell.data$barcode <- NULL
+blood.harmony <- AddMetaData(blood.harmony, cell.data, col.name = "celltype")
+
 # save annotated UMAP
 annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
-png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+png(paste0(harmony.samples.path, "dim40_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
 print(annotated.umap.plot)
 dev.off()
 
