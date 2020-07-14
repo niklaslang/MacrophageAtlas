@@ -348,9 +348,14 @@ cluster.annotation <- c("Fibrotic Liver CD4+ T cell 1", "Fibrotic Liver CD4+ T c
                         "Fibrotic Liver Endo 5", "Fibrotic Liver IFN primed T cell", "Fibrotic Liver Mast cell",
                         "Fibrotic Liver Cholangiocyte 3"
 )
-
 names(cluster.annotation) <- levels(liver.harmony)
 liver.harmony <- RenameIdents(liver.harmony, cluster.annotation)
+# add cell types to meta data
+cell.data <- data.table(barcode = colnames(liver.harmony),
+                        celltype = Idents(liver.harmony))
+cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
+cell.data$barcode <- NULL
+liver.harmony <- AddMetaData(liver.harmony, cell.data, col.name = "celltype")
 
 # save annotated UMAP
 annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
