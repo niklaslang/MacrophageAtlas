@@ -333,6 +333,12 @@ cluster.annotation <- c("Healthy Blood CD14+ Monocyte 1", "Healthy Blood CD4+ T 
 
 names(cluster.annotation) <- levels(blood.harmony)
 blood.harmony <- RenameIdents(blood.harmony, cluster.annotation)
+# add cell types to meta data
+cell.data <- data.table(barcode = colnames(blood.harmony),
+                        celltype = Idents(blood.harmony))
+cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
+cell.data$barcode <- NULL
+blood.harmony <- AddMetaData(blood.harmony, cell.data, col.name = "celltype")
 
 # save annotated UMAP
 annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
