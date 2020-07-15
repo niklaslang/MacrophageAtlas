@@ -468,7 +468,7 @@ cell.data <- data.table(barcode = colnames(liver.harmony),
                         celltype = Idents(liver.harmony))
 cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
 cell.data$barcode <- NULL
-liver.harmony <- AddMetaData(liver.harmony, cell.data, col.name = "celltype")
+liver.harmony <- AddMetaData(liver.harmony, cell.data, col.name = "celltype_integrated")
 
 # save annotated UMAP
 annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, repel = TRUE, label.size = 5, pt.size = 0.1)
@@ -496,13 +496,23 @@ meta.data <- merge(cell.data, lineage.data, by = "celltype")
 meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
 meta.data$barcode <- NULL
 meta.data$celltype <- NULL
-liver.harmony <- AddMetaData(liver.harmony, meta.data, col.name = "lineage")
+liver.harmony <- AddMetaData(liver.harmony, meta.data, col.name = "lineage_integrated")
 
 # save annotated UMAP
-annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "lineage", label = T, repel = TRUE, label.size = 10, pt.size = 0.1)
+annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "lineage_integrated", label = T, repel = TRUE, label.size = 10, pt.size = 0.1)
 png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
 print(annotated.umap.plot)
 dev.off()
+
+# check lineage annotation #
+lineage.table1 <- table(liver.harmony$lineage, liver.harmony$lineage_integrated)
+write.csv(lineage.table1, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_1.csv"))
+
+lineage.table2 <- table(liver.harmony$condition, liver.harmony$lineage_integrated)
+write.csv(lineage.table2, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_2.csv"))
+
+lineage.table3 <- table(liver.harmony$patient.ID, liver.harmony$lineage_integrated)
+write.csv(lineage.table3, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_3.csv"))
 
 ### save R session ###
 save.image(file = "/home/s1987963/ds_group/Niklas/all_liver/harmonize_samples/HVGs_conditions/combined_liver_harmony.RData")
