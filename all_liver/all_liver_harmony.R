@@ -444,4 +444,69 @@ liver.top50.markers <- liver.markers %>% group_by(cluster) %>% top_n(n = 50, wt 
 write.csv(liver.markers, file = paste0(harmony.samples.path, "dim50_annotation/ALL_marker_genes.csv"))
 write.csv(liver.top50.markers, file = paste0(harmony.samples.path, "dim50_annotation/top50_marker_genes.csv"))
 
+### cell type annotation ###
+cluster.annotation <- c("Combined Liver CD8+ T cell 1", "Combined Liver NK1", "Combined Liver CD4+ T cell 1",
+                        "Combined Liver CD4+ T cell 2", "Combined Liver KC1", "Combined Liver NK2",
+                        "Combined Liver Hepatocyte 1", "Combined Liver LSEndo 1", "Combined Liver Macrophage 1",
+                        "Combined Liver Cholangiocyte 1", "Combined Liver Endo 1", "Combined Liver Monocyte 1",
+                        "Combined Liver PV Endo", "Combined Liver B cell", "Combined Liver Endo 2",
+                        "Combined Liver Mesenchyme 1", "Combined Liver HA Endo", "Combined Liver CV Endo",
+                        "Combined Liver cDC2", "Combined Liver Monocyte 2", "Combined Liver Proliferating 1",
+                        "Combined Liver Plasma cell 1", "Combined Liver NK Cell 3", "Combined Liver LSEndo 2",
+                        "Combined Liver Mesenchyme 2", "Combined Liver CTLA4+ T cell", "Combined Liver LymphEndo",
+                        "Combined Liver KC2", "Combined Liver pDC", "Combined Liver cDC1",
+                        "Combined Liver Hepatocyte 2", "Combined Liver KC3", "Combined Liver Cholangiocyte 2",
+                        "Combined Liver Proliferating 3", "Combined Liver Basophil", "Combined Liver Hepatocyte 3",
+                        "Combined Liver Mast Cell", "Combined Liver Proliferating 4", "Combined Liver LSEndo 3",
+                        "Combined Liver Cholangiocyte 3", "Combined Liver IFN primed T cell", "Combined Liver Hepatocyte 4",
+                        "Combined Liver Red blood cell", "Combined Liver Cholangiocyte 4", "Combined Liver NK Cell 4"
+)
+names(cluster.annotation) <- levels(liver.harmony)
+liver.harmony <- RenameIdents(liver.harmony, cluster.annotation)
+# add cell types to meta data
+cell.data <- data.table(barcode = colnames(liver.harmony),
+                        celltype = Idents(liver.harmony))
+cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
+cell.data$barcode <- NULL
+liver.harmony <- AddMetaData(liver.harmony, cell.data, col.name = "celltype")
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", label = T, repel = TRUE, label.size = 5, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(liver.harmony),
+                        celltype = Idents(liver.harmony))
+
+lineage.annotation <- c("T cell","NK cell","T cell","T cell","MP",
+                        "NK cell","Epithelia","Endothelia","MP","Epithelia",
+                        "Endothelia","MP","Endothelia","B cell","Endothelia",
+                        "Mesenchyme","Endothelia","Endothelia","MP","MP",
+                        "Proliferating","Plasma cell", "NK cell","Endothelia","Mesenchyme",
+                        "T cell","Endothelia","MP","MP","MP",
+                        "Epithelia","MP", "Epithelia","Proliferating","Basophil",
+                        "Epithelia","Mast cell","Proliferating","Endothelia","Epithelia",
+                        "T cell","Epithelia","Red blood cell","Epithelia","NK cell"
+)
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+liver.harmony <- AddMetaData(liver.harmony, meta.data, col.name = "lineage")
+
+# save annotated UMAP
+annotated.umap.plot <- DimPlot(liver.harmony, reduction = "umap", group.by = "lineage", label = T, repel = TRUE, label.size = 10, pt.size = 0.1)
+png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
+print(annotated.umap.plot)
+dev.off()
+
+### save R session ###
+save.image(file = "/home/s1987963/ds_group/Niklas/all_liver/harmonize_samples/HVGs_conditions/combined_liver_harmony.RData")
+
+### save data ###
+saveRDS(liver.harmony, "/home/s1987963/ds_group/Niklas/combined_organs/combined_liver_annotated.rds")
 
