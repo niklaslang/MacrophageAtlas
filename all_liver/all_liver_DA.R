@@ -42,11 +42,49 @@ endothelial <- subset(liver, subset = lineage_integrated == "Endothelia") # 1280
 # MPs
 MP <- subset(liver, subset = lineage_integrated == "MP") # 11999 cells
 
+# T cells
+NKTcell <- subset(liver, subset = lineage_integrated == "T cell" | lineage_integrated == "NK cell") # 37253 cells
+
 ### convert seurat objects to sce ###
 liver.sce <- as.SingleCellExperiment(liver)
 immune.sce <- as.SingleCellExperiment(immune)
 endothelia.sce <- as.SingleCellExperiment(endothelial)
 MP.sce <- as.SingleCellExperiment(MP)
+NKTcell.sce <- as.SingleCellExperiment(NKTcell)
+
+#################
+### FUNCTIONS ###
+#################
+
+composition_barplot <- function(data, level, split, x_label, legend_title){
+  plot <- ggplot(data, aes(x = level, y = Frequency, fill = split)) +
+    geom_bar(stat = "identity", position = "fill") +
+    theme_classic() + 
+    labs(x = x_label, fill = legend_title) +
+    theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+          axis.text.y = element_text(size = 12), 
+          axis.title = element_text(size = 16),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12)) +
+    scale_fill_viridis(discrete=TRUE)
+  return(plot)
+}
+
+abundance_barplot <- function(data, level, split, x_label, legend_title){
+  plot <- ggplot(data, aes(x = level, y = Frequency, fill = split)) +
+    geom_bar(stat = "identity", position = "fill") +
+    facet_wrap(~ Condition, scales = "free_x") +
+    labs(x = x_label, fill = legend_title) +
+    theme_classic() + 
+    theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+          axis.text.y = element_text(size = 12), 
+          axis.title = element_text(size = 16),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12),
+          strip.text.x = element_text(size=16)) +
+    scale_fill_viridis(discrete=TRUE)
+  return(plot)
+}
 
 ###############
 ### OVERALL ###
@@ -106,69 +144,36 @@ df.lineages <- data.frame(
 m <- match(df.lineages$Sample.ID, ei$Sample.ID)
 df.lineages$Condition <- ei$Condition[m]
 
+### visualisation ###
 # visualise lineage composition at patient level
-overall_lineage_composition <- ggplot(df.lineages, aes(x = Lineage, y = Frequency, fill = Sample.ID)) +
-  geom_bar(stat = "identity", position = "fill") +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12)) +
-  scale_fill_viridis(discrete=TRUE)
-png(paste0(DA.path, "overall_lineage_composition.barplot.png"), width=1200,height=800,units="px")
-print(overall_lineage_composition)
+overall_lineage_patient.composition <- composition_barplot(df.lineages, df.lineages$Lineage, df.lineages$Sample.ID,
+                                                           "Cell lineage", "Patient ID")
+png(paste0(DA.path, "overall_lineage_patient.composition.barplot.png"), width=1200,height=600,units="px") # width = ncols X 100 + 100 for legend
+print(overall_lineage_patient.composition)
 dev.off()
 
 # visualise lineage composition at condition level
-overall_condition_composition <- ggplot(df.lineages, aes(x = Lineage, y = Frequency, fill = Condition)) +
-  geom_bar(stat = "identity", position = "fill") +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12)) +
-  scale_fill_viridis(discrete=TRUE)
-png(paste0(DA.path, "overall_condition_composition.barplot.png"), width=1200,height=800,units="px")
-print(overall_condition_composition)
+overall_lineage_condition.composition <- composition_barplot(df.lineages, df.lineages$Lineage, df.lineages$Condition,
+                                                             "Cell lineage", "Condition")
+png(paste0(DA.path, "overall_lineage_condition.composition.barplot.png"), width=1200,height=600,units="px")
+print(overall_lineage_condition.composition)
 dev.off()
 
 # compare composition plots
-overall_composition <- overall_condition_composition + overall_lineage_composition
-png(paste0(DA.path, "overall_composition.barplot.png"), width=1800,height=800,units="px")
-print(overall_composition)
+overall_lineage_composition <- overall_lineage_condition.composition + overall_lineage_patient.composition
+png(paste0(DA.path, "overall_lineage_composition.barplot.png"), width=1200,height=600,units="px")
+print(overall_lineage_composition)
 dev.off()
 
-# barplot of relative celltype abundances
-overall_cell_abundance <- ggplot(df.celltypes, aes(x = Sample.ID, y = Frequency, fill = Celltype)) +
-  geom_bar(stat = "identity", position = "fill") +
-  facet_wrap(~ Condition, scales = "free_x") +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12),
-        strip.text.x = element_text(size=16)) +
-  scale_fill_viridis(discrete=TRUE)
+# barplot of relative celltype abundances per sample
+overall_celltype_abundance <- abundance_barplot(df.celltypes, df.celltypes$Sample.ID, df.celltypes$Celltype, "Patient ID", "Cell type")
 png(paste0(DA.path, "overall_celltype_abundance.barplot.png"), width=1200,height=600,units="px")
-print(overall_cell_abundance)
+print(overall_celltype_abundance)
 dev.off()
 
-# barplot of relative lineage abundances
-overall_lineage_abundance <- ggplot(df.lineages, aes(x = Sample.ID, y = Frequency, fill = Lineage)) +
-  geom_bar(stat = "identity", position = "fill") + 
-  facet_wrap(~ Condition, scales = "free_x") +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12),
-        strip.text.x = element_text(size=16))+
-  scale_fill_viridis(discrete=TRUE)
-png(paste0(DA.path, "overall_lineage_abundance.barplot.png"), width=1200,height=600,units="px")
+# barplot of relative lineage abundances per sample
+overall_lineage_abundance <- abundance_barplot(df.lineages, df.lineages$Sample.ID, df.lineages$Lineage, "Patient ID", "Cell lineage")
+png(paste0(DA.path, "overall_lineage_abundance.barplot.png"), width=1100,height=600,units="px")
 print(overall_lineage_abundance)
 dev.off()
 
@@ -252,76 +257,68 @@ n_lineages <- table(immune.sce$Lineage, immune.sce$Patient.ID)
 freqs_cells <- prop.table(n_cells, margin = 1)
 freqs_lineages <- prop.table(n_lineages, margin = 1)
 
-# visualise cell type abundance
-# prep data.frame for plotting
-df <- data.frame(
+# prepare data.frames for visualisation
+df.celltypes <- data.frame(
   Frequency = as.numeric(freqs_cells), 
   Celltype = rep(kids, n.samples),
   Sample.ID = rep(sids, each = n.clusters))
-m <- match(df$Sample.ID, ei$Sample.ID)
-df$Condition <- ei$Condition[m]
+m <- match(df.celltypes$Sample.ID, ei$Sample.ID)
+df.celltypes$Condition <- ei$Condition[m]
 
-# barplot of relative  celltype abundances
-immune_cell_abundance <- ggplot(df, aes(x = Sample.ID, y = Frequency, fill = Celltype)) +
-  geom_bar(stat = "identity", color="black", position = "fill") +
-  facet_wrap(~ Condition, scales = "free_x") +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12),
-        strip.text.x = element_text(size=16))
-png(paste0(DA.path, "immune_cell.barplot.png"), width=1800,height=600,units="px")
-print(immune_cell_abundance)
-dev.off()
-
-# boxplot of relative cluster-abundances
-immune_cell_abundance2 <- ggplot(df, aes(x = Condition, y = Frequency, color = Condition)) +
-  geom_boxplot(outlier.colour = NA) +  geom_jitter() +
-  facet_wrap(~ Celltype, scales = "free_y", ncol = 4) +
-  theme_classic()
-png(paste0(DA.path, "immune_cell.boxplot.png"), width=1800,height=1200,units="px")
-print(immune_cell_abundance2)
-dev.off()
-
-# visualise lineage abundance
-# prep data.frame for plotting
-df <- data.frame(
+df.lineages <- data.frame(
   Frequency = as.numeric(freqs_lineages), 
   Lineage = rep(lids, n.samples),
   Sample.ID = rep(sids, each = n.lineages))
-m <- match(df$Sample.ID, ei$Sample.ID)
-df$Condition <- ei$Condition[m]
+m <- match(df.lineages$Sample.ID, ei$Sample.ID)
+df.lineages$Condition <- ei$Condition[m]
 
-# barplot of relative cluster-abundances
-immune_lineage_abundance <- ggplot(df, aes(x = Sample.ID, y = Frequency, fill = Lineage)) +
-  geom_bar(stat = "identity", color="black", position = "fill") + 
-  facet_wrap(~ Condition, scales = "free_x") +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12),
-        strip.text.x = element_text(size=16))
-png(paste0(DA.path, "immune_lineage.barplot.png"), width=1200,height=600,units="px")
-print(immune_lineage_abundance)
+### visualisation ###
+# visualise lineage composition at condition level
+immune_lineage_patient.composition <- composition_barplot(df.lineages, df.lineages$Lineage, df.lineages$Sample.ID, "Cell lineage", "Patient ID")
+png(paste0(DA.path, "immune_lineage_patient.composition.barplot.png"), width=800,height=600,units="px")
+print(immune_lineage_patient.composition)
 dev.off()
 
-# boxplot of relative cluster-abundances
-immune_lineage_abundance2 <- ggplot(df, aes(x = Condition, y = Frequency, color = Condition)) +
-  geom_boxplot(outlier.colour = NA) +  geom_jitter() +
-  facet_wrap(~ Lineage, scales = "free_y", ncol = 4) +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12),
-        strip.text.x = element_text(size=16))
-png(paste0(DA.path, "immune_lineage.boxplot.png"), width=1800,height=1200,units="px")
-print(immune_lineage_abundance2)
+# visualise lineage composition at condition level
+immune_lineage_condition.composition <- composition_barplot(df.lineages, df.lineages$Lineage, df.lineages$Condition, "Cell lineage", "Condition")
+png(paste0(DA.path, "immune_lineage_condition.composition.barplot.png"), width=800,height=600,units="px")
+print(immune_lineage_condition.composition)
+dev.off()
+
+# compare composition plots
+immune_lineage_composition <- immune_lineage_condition.composition + immune_lineage_patient.composition
+png(paste0(DA.path, "immune_lineage_composition.barplot.png"), width=800,height=600,units="px")
+print(immune_lineage_composition)
+dev.off()
+
+# visualise celltype composition at condition level
+immune_celltype_patient.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Sample.ID, "Cell types", "Patient ID")
+png(paste0(DA.path, "immune_celltype_patient.composition.barplot.png"), width=800,height=600,units="px")
+print(immune_celltype_patient.composition)
+dev.off()
+
+# visualise celltype composition at condition level
+immune_celltype_condition.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Condition, "Cell type", "Condition")
+png(paste0(DA.path, "immune_celltype_condition.composition.barplot.png"), width=800,height=600,units="px")
+print(immune_celltype_condition.composition)
+dev.off()
+
+# compare composition plots
+immune_celltype_composition <- immune_celltype_condition.composition + immune_celltype_patient.composition
+png(paste0(DA.path, "immune_celltype_composition.barplot.png"), width=1200,height=600,units="px")
+print(immune_celltype_composition)
+dev.off()
+
+# barplot of relative celltype abundances per sample
+immune_celltype_abundance <- abundance_barplot(df.celltypes, df.celltypes$Sample.ID, df.celltypes$Celltype, "Patient ID", "Cell type")
+png(paste0(DA.path, "immune_celltype_abundance.barplot.png"), width=1200,height=600,units="px")
+print(immune_celltype_abundance)
+dev.off()
+
+# barplot of relative lineage abundances per sample
+immune_lineage_abundance <- abundance_barplot(df.lineages, df.lineages$Sample.ID, df.lineages$Lineage, "Patient ID", "Cell lineage")
+png(paste0(DA.path, "immune_lineage_abundance.barplot.png"), width=1100,height=600,units="px")
+print(immune_lineage_abundance)
 dev.off()
 
 ### DA analysis: cell level ###
@@ -358,20 +355,7 @@ plotQLDisp(fit.ab, cex=1)
 res <- glmQLFTest(fit.ab, coef=ncol(design))
 summary(decideTests(res))
 topTags(res)
-
-# assuming most labels do not change
-y.ab2 <- calcNormFactors(y.ab)
-y.ab2$samples$norm.factors
-y.ab2 <- estimateDisp(y.ab2, design, trend="none")
-fit.ab2 <- glmQLFit(y.ab2, design, robust=TRUE, abundance.trend=FALSE)
-res2 <- glmQLFTest(fit.ab2, coef=ncol(design))
-summary(decideTests(res2))
-topTags(res2, n=10)
-
-# testing against a log-fold change threshold
-res.lfc <- glmTreat(fit.ab, coef=ncol(design), lfc=1)
-summary(decideTests(res.lfc))
-topTags(res.lfc)
+write.csv(res, file = paste0(DA.path, "immmune_celltypes_abundance.csv"))
 
 ### DA analysis: lineage level ###
 # abundance table
@@ -407,20 +391,7 @@ plotQLDisp(fit.ab, cex=1)
 res <- glmQLFTest(fit.ab, coef=ncol(design))
 summary(decideTests(res))
 topTags(res)
-
-# assuming most labels do not change
-y.ab2 <- calcNormFactors(y.ab)
-y.ab2$samples$norm.factors
-y.ab2 <- estimateDisp(y.ab2, design, trend="none")
-fit.ab2 <- glmQLFit(y.ab2, design, robust=TRUE, abundance.trend=FALSE)
-res2 <- glmQLFTest(fit.ab2, coef=ncol(design))
-summary(decideTests(res2))
-topTags(res2, n=10)
-
-# testing against a log-fold change threshold
-res.lfc <- glmTreat(fit.ab, coef=ncol(design), lfc=1)
-summary(decideTests(res.lfc))
-topTags(res.lfc)
+write.csv(res, file = paste0(DA.path, "immmune_lineage_abundance.csv"))
 
 ###########
 ### MPs ###
@@ -455,44 +426,44 @@ n_cells <- as.numeric(table(MP.sce$Sample.ID))
                   n_cells, row.names = NULL) %>% 
     select(-c("Celltype", "Lineage", "Cluster.ID")))
 
-### DA visualisation ###
 # calculate cell type abundance per sample
 n_cells <- table(MP.sce$Celltype, MP.sce$Patient.ID)[c(5,9,12,19,20,28,29,30,32),]
 
 # calculate cell/lineage proportions across samples
 freqs_cells <- prop.table(n_cells, margin = 1)
 
-# visualise cell type abundance
-# prep data.frame for plotting
-df <- data.frame(
+# prepare data.frames for visualisation
+df.celltypes <- data.frame(
   Frequency = as.numeric(freqs_cells), 
   Celltype = rep(kids, n.samples),
   Sample.ID = rep(sids, each = n.clusters))
-m <- match(df$Sample.ID, ei$Sample.ID)
-df$Condition <- ei$Condition[m]
+m <- match(df.celltypes$Sample.ID, ei$Sample.ID)
+df.celltypes$Condition <- ei$Condition[m]
 
-# barplot of relative  celltype abundances
-MP_abundance <- ggplot(df, aes(x = Sample.ID, y = Frequency, fill = Celltype)) +
-  geom_bar(stat = "identity", color="black", position = "fill") +
-  facet_wrap(~ Condition, scales = "free_x") +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12),
-        strip.text.x = element_text(size=16))
-png(paste0(DA.path, "MP.barplot.png"), width=1800,height=600,units="px")
-print(MP_abundance)
+### visualisation ###
+# visualise celltype composition at patient level
+MP_celltype_patient.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Sample.ID, "Cell type", "Patient ID")
+png(paste0(DA.path, "MP_celltype_patient.composition.barplot.png"), width=1000,height=600,units="px")
+print(MP_celltype_patient.composition)
 dev.off()
 
-# boxplot of relative cluster-abundances
-MP_abundance2 <- ggplot(df, aes(x = Condition, y = Frequency, color = Condition)) +
-  geom_boxplot(outlier.colour = NA) +  geom_jitter() +
-  facet_wrap(~ Celltype, scales = "free_y", ncol = 4) +
-  theme_classic()
-png(paste0(DA.path, "MP.boxplot.png"), width=1800,height=1200,units="px")
-print(MP_abundance2)
+# visualise celltype composition at condition level
+MP_celltype_condition.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Condition, "Cell type", "Condition")
+png(paste0(DA.path, "MP_celltype_condition.composition.barplot.png"), width=1000,height=600,units="px")
+print(MP_celltype_condition.composition)
+dev.off()
+
+# compare composition plots
+MP_celltype_composition <- MP_celltype_condition.composition + MP_celltype_patient.composition
+png(paste0(DA.path, "MP_celltype_composition.barplot.png"), width=1000,height=600,units="px")
+print(MP_celltype_composition)
+dev.off()
+
+# visualise cell type abundance
+# barplot of relative  celltype abundances
+MP_celltype_abundance <- abundance_barplot(df.celltypes, df.celltypes$Sample.ID, df.celltypes$Celltype, "Patient ID", "Cell type")
+png(paste0(DA.path, "MP_celltype_abundance.barplot.png"), width=1100,height=600,units="px")
+print(MP_celltype_abundance)
 dev.off()
 
 ### DA analysis ###
@@ -529,27 +500,14 @@ plotQLDisp(fit.ab, cex=1)
 res <- glmQLFTest(fit.ab, coef=ncol(design))
 summary(decideTests(res))
 topTags(res)
+write.csv(res, file = paste0(DA.path, "MP_celltype_abundance.csv"))
 
-# assuming most labels do not change
-y.ab2 <- calcNormFactors(y.ab)
-y.ab2$samples$norm.factors
-y.ab2 <- estimateDisp(y.ab2, design, trend="none")
-fit.ab2 <- glmQLFit(y.ab2, design, robust=TRUE, abundance.trend=FALSE)
-res2 <- glmQLFTest(fit.ab2, coef=ncol(design))
-summary(decideTests(res2))
-topTags(res2, n=10)
-
-# testing against a log-fold change threshold
-res.lfc <- glmTreat(fit.ab, coef=ncol(design), lfc=1)
-summary(decideTests(res.lfc))
-topTags(res.lfc)
-
-###################
-### ENDOTHELIAL ###
-###################
+###############
+### NKT CELLS ###
+###############
 
 ### create meta data data frame ###
-colData(endothelia.sce) %>% 
+colData(NKTcell.sce) %>% 
   as.data.frame %>% 
   transmute(
     Condition = condition, 
@@ -559,67 +517,67 @@ colData(endothelia.sce) %>%
     Celltype = celltype_integrated,
     Lineage = lineage_integrated) %>%
   mutate_all(as.factor) %>% 
-  set_rownames(colnames(endothelia.sce)) %>% 
-  DataFrame -> colData(endothelia.sce)
+  set_rownames(colnames(NKTcell.sce)) %>% 
+  DataFrame -> colData(NKTcell.sce)
 
 # view data frame
-head(colData(endothelia.sce))
+head(colData(NKTcell.sce))
 
 # store number of cluster and number of samples
-n.clusters <- length(kids <- set_names(levels(endothelia.sce$Celltype)[c(8,13,15,17,18,24,27,39)]))
-n.samples <- length(sids <- set_names(levels(endothelia.sce$Patient.ID)))
+n.clusters <- length(kids <- set_names(levels(NKTcell.sce$Celltype)[c(1,2,3,4,6,23,26,41,45)]))
+n.samples <- length(sids <- set_names(levels(NKTcell.sce$Patient.ID)))
 
 # summary of experimental design
-m <- match(sids, endothelia.sce$Sample.ID)
-n_cells <- as.numeric(table(endothelia.sce$Sample.ID))
+m <- match(sids, NKTcell.sce$Sample.ID)
+n_cells <- as.numeric(table(NKTcell.sce$Sample.ID))
 
-(ei <- data.frame(colData(endothelia.sce)[m, ], 
+(ei <- data.frame(colData(NKTcell.sce)[m, ], 
                   n_cells, row.names = NULL) %>% 
     select(-c("Celltype", "Lineage", "Cluster.ID")))
 
 ### DA visualisation ###
 # calculate cell type abundance per sample
-n_cells <- table(endothelia.sce$Celltype, endothelia.sce$Patient.ID)[c(8,13,15,17,18,24,27,39),]
+n_cells <- table(NKTcell.sce$Celltype, NKTcell.sce$Patient.ID)[c(1,2,3,4,6,23,26,41,45),]
 
 # calculate cell/lineage proportions across samples
 freqs_cells <- prop.table(n_cells, margin = 1)
 
-# visualise cell type abundance
-# prep data.frame for plotting
-df <- data.frame(
+# prepare data.frames for visualisation
+df.celltypes <- data.frame(
   Frequency = as.numeric(freqs_cells), 
   Celltype = rep(kids, n.samples),
   Sample.ID = rep(sids, each = n.clusters))
-m <- match(df$Sample.ID, ei$Sample.ID)
-df$Condition <- ei$Condition[m]
+m <- match(df.celltypes$Sample.ID, ei$Sample.ID)
+df.celltypes$Condition <- ei$Condition[m]
 
-# barplot of relative  celltype abundances
-endothelia_abundance <- ggplot(df, aes(x = Sample.ID, y = Frequency, fill = Celltype)) +
-  geom_bar(stat = "identity", color="black", position = "fill") +
-  facet_wrap(~ Condition, scales = "free_x") +
-  theme_classic() + 
-  theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 12), 
-        axis.title = element_text(size = 16),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 12),
-        strip.text.x = element_text(size=16))
-png(paste0(DA.path, "endothelia.barplot.png"), width=1800,height=600,units="px")
-print(endothelia_abundance)
+### visualisation ###
+# visualise celltype composition at patient level
+NKTcell_celltype_patient.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Sample.ID, "Cell type", "Patient ID")
+png(paste0(DA.path, "NKTcell_celltype_patient.composition.barplot.png"), width=1000,height=600,units="px")
+print(NKTcell_celltype_patient.composition)
 dev.off()
 
-# boxplot of relative cluster-abundances
-endothelia_abundance2 <- ggplot(df, aes(x = Condition, y = Frequency, color = Condition)) +
-  geom_boxplot(outlier.colour = NA) +  geom_jitter() +
-  facet_wrap(~ Celltype, scales = "free_y", ncol = 4) +
-  theme_classic()
-png(paste0(DA.path, "endothelia.boxplot.png"), width=1800,height=1200,units="px")
-print(endothelia_abundance2)
+# visualise celltype composition at condition level
+NKTcell_celltype_condition.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Condition, "Cell type", "Condition")
+png(paste0(DA.path, "NKTcell_celltype_condition.composition.barplot.png"), width=1000,height=600,units="px")
+print(NKTcell_celltype_condition.composition)
+dev.off()
+
+# compare composition plots
+NKTcell_celltype_composition <- NKTcell_celltype_condition.composition + NKTcell_celltype_patient.composition
+png(paste0(DA.path, "NKTcell_celltype_composition.barplot.png"), width=1000,height=600,units="px")
+print(NKTcell_celltype_composition)
+dev.off()
+
+# barplot of relative  celltype abundances
+NKTcell_celltype_abundance <- abundance_barplot(df.celltypes, df.celltypes$Sample.ID, df.celltypes$Celltype, "Patient ID", "Cell type")
+png(paste0(DA.path, "NKTcell_celltype_abundance.barplot.png"), width=1100,height=600,units="px")
+print(NKTcell_celltype_abundance)
 dev.off()
 
 ### DA analysis ###
 # abundance table
-abundances <- table(endothelia.sce$Celltype, endothelia.sce$Sample.ID) 
+abundances <- table(NKTcell.sce$Celltype, NKTcell.sce$Sample.ID) 
 abundances <- unclass(abundances) 
 head(abundances)
 
@@ -651,18 +609,121 @@ plotQLDisp(fit.ab, cex=1)
 res <- glmQLFTest(fit.ab, coef=ncol(design))
 summary(decideTests(res))
 topTags(res)
+write.csv(res, file = paste0(DA.path, "NKTcell_celltype_abundance.csv"))
 
-# assuming most labels do not change
-y.ab2 <- calcNormFactors(y.ab)
-y.ab2$samples$norm.factors
-y.ab2 <- estimateDisp(y.ab2, design, trend="none")
-fit.ab2 <- glmQLFit(y.ab2, design, robust=TRUE, abundance.trend=FALSE)
-res2 <- glmQLFTest(fit.ab2, coef=ncol(design))
-summary(decideTests(res2))
-topTags(res2, n=10)
+###################
+### ENDOTHELIAL ###
+###################
 
-# testing against a log-fold change threshold
-res.lfc <- glmTreat(fit.ab, coef=ncol(design), lfc=1)
-summary(decideTests(res.lfc))
-topTags(res.lfc)
+### create meta data data frame ###
+colData(endothelia.sce) %>% 
+  as.data.frame %>% 
+  transmute(
+    Condition = condition, 
+    Patient.ID = patient.ID,
+    Sample.ID = patient.ID,
+    Cluster.ID = seurat_clusters,
+    Celltype = celltype_integrated,
+    Lineage = lineage_integrated) %>%
+  mutate_all(as.factor) %>% 
+  set_rownames(colnames(endothelia.sce)) %>% 
+  DataFrame -> colData(endothelia.sce)
 
+# view data frame
+head(colData(endothelia.sce))
+
+# store number of cluster and number of samples
+n.clusters <- length(kids <- set_names(levels(endothelia.sce$Celltype)[c(8,11,13,15,17,18,24,27)]))
+n.samples <- length(sids <- set_names(levels(endothelia.sce$Patient.ID)))
+
+# summary of experimental design
+m <- match(sids, endothelia.sce$Sample.ID)
+n_cells <- as.numeric(table(endothelia.sce$Sample.ID))
+
+(ei <- data.frame(colData(endothelia.sce)[m, ], 
+                  n_cells, row.names = NULL) %>% 
+    select(-c("Celltype", "Lineage", "Cluster.ID")))
+
+### DA visualisation ###
+# calculate cell type abundance per sample
+n_cells <- table(endothelia.sce$Celltype, endothelia.sce$Patient.ID)[c(8,11,13,15,17,18,24,27),]
+
+# calculate cell/lineage proportions across samples
+freqs_cells <- prop.table(n_cells, margin = 1)
+
+# prepare data.frames for visualisation
+df.celltypes <- data.frame(
+  Frequency = as.numeric(freqs_cells), 
+  Celltype = rep(kids, n.samples),
+  Sample.ID = rep(sids, each = n.clusters))
+m <- match(df.celltypes$Sample.ID, ei$Sample.ID)
+df.celltypes$Condition <- ei$Condition[m]
+
+### visualisation ###
+# visualise celltype composition at patient level
+endothelia_celltype_patient.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Sample.ID, "Cell type", "Patient ID")
+png(paste0(DA.path, "endothelia_celltype_patient.composition.barplot.png"), width=1000,height=600,units="px")
+print(endothelia_celltype_patient.composition)
+dev.off()
+
+# visualise celltype composition at condition level
+endothelia_celltype_condition.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Condition, "Cell type", "Condition")
+png(paste0(DA.path, "endothelia_celltype_condition.composition.barplot.png"), width=1000,height=600,units="px")
+print(endothelia_celltype_condition.composition)
+dev.off()
+
+# compare composition plots
+endothelia_celltype_composition <- endothelia_celltype_condition.composition + endothelia_celltype_patient.composition
+png(paste0(DA.path, "endothelia_celltype_composition.barplot.png"), width=1000,height=600,units="px")
+print(endothelia_celltype_composition)
+dev.off()
+
+# barplot of relative  celltype abundances
+endothelia_celltype_abundance <- abundance_barplot(df.celltypes, df.celltypes$Sample.ID, df.celltypes$Celltype, "Patient ID", "Cell type")
+png(paste0(DA.path, "endothelia_celltype_abundance.barplot.png"), width=1100,height=600,units="px")
+print(endothelia_celltype_abundance)
+dev.off()
+
+### DA analysis ###
+# abundance table
+abundances <- table(endothelia.sce$Celltype, endothelia.sce$Sample.ID) 
+abundances <- unclass(abundances) 
+head(abundances)
+
+# attaching some column metadata.
+extra.info <- colData(endothelia.sce)[match(colnames(abundances), endothelia.sce$Sample.ID),]
+y.ab <- DGEList(abundances, samples=extra.info)
+y.ab
+
+# filter out low-abundance labels
+keep <- filterByExpr(y.ab, group=y.ab$samples$Condition)
+y.ab <- y.ab[keep,]
+summary(keep)
+
+# create design matrix
+design <- model.matrix(~ factor(Condition), y.ab$samples)
+
+# estimate the NB dipersion for each cell type
+y.ab <- estimateDisp(y.ab, design, trend="none")
+summary(y.ab$common.dispersion)
+plotBCV(y.ab, cex=1)
+
+# estimate QL dispersion for each cell type
+fit.ab <- glmQLFit(y.ab, design, robust=TRUE, abundance.trend=FALSE)
+summary(fit.ab$var.prior)
+summary(fit.ab$df.prior)
+plotQLDisp(fit.ab, cex=1)
+
+# test for differences in abundance between healthy and fibrotic tissue
+res <- glmQLFTest(fit.ab, coef=ncol(design))
+summary(decideTests(res))
+topTags(res)
+write.csv(res, file = paste0(DA.path, "endothelia_celltype_abundance.csv"))
+
+##################
+### MESENCHYME ###
+##################
+
+#################
+### EPITHELIA ###
+#################
