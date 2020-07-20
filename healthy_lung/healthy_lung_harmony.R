@@ -18,8 +18,8 @@ harmony.samples.path <- "/home/s1987963/ds_group/Niklas/healthy_lung/harmonize_s
 
 ### read files ###
 raredon.lung <- readRDS(raredon.lung.path) # 17867 cells
-reyfman.lung <- readRDS(reyfman.lung.path) # 44873 cells
-habermann.lung <- readRDS(habermann.lung.path) # 56222 cells
+reyfman.lung <- readRDS(reyfman.lung.path) # 42144 cells
+habermann.lung <- readRDS(habermann.lung.path) # 44873  cells
 
 ### add meta data ###
 raredon.lung$study <- "raredon_lung"
@@ -480,4 +480,4 @@ dev.off()
 save.image(file = "/home/s1987963/ds_group/Niklas/healthy_lung/harmonize_samples/HVGs_3studies/healthy_lung_harmony.RData")
 
 ### save data ###
-saveRDS(blood.harmony, "/home/s1987963/ds_group/Niklas/healthy_organs/healthy_lung_annotated.rds")
+saveRDS(lung.harmony, "/home/s1987963/ds_group/Niklas/healthy_organs/healthy_lung_annotated.rds")
