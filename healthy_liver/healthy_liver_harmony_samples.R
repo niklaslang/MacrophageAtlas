@@ -11,7 +11,7 @@ library(patchwork)
 library(data.table)
 
 ### path variables ###
-ramachandran.liver.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/ramacha_liver_healthy_filtered.rds"
+ramachandran.liver.path <- "/home/s1987963/ds_group/Niklas/ramacha_liver/healthy/ramacha_liver_healthy_filtered.rds"
 macparland.liver.path <- "/home/s1987963/ds_group/Niklas/macparland_liver/macparland_liver_filtered.rds"
 liver.path <- "/home/s1987963/ds_group/Niklas/healthy_liver/"
 harmony.samples.path <- "/home/s1987963/ds_group/Niklas/healthy_liver/harmonize_samples/"
