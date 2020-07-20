@@ -3,6 +3,7 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
+library(viridis)
 library(patchwork)
 library(umap)
 library(reticulate)
@@ -82,45 +83,73 @@ saveRDS(lung.fibrotic, paste0(lung.path, "habermann_lung_fibrotic.rds"))
 # scatter plots
 QC.scatter <- function(data){
   scatter.plot <- ggplot(data[[]], aes( x = nCount_RNA, y = nFeature_RNA)) + 
-    geom_point(aes(colour = percent.mt), size = 1) + 
+    geom_point(aes(colour = percent.mt), size = 0.5) + 
     coord_cartesian(xlim = c(0.0 , 50000), ylim = c(0.0 , 10000)) +
-    labs(title = "Overall QC", x  ="Count depth", y = "Unique Genes") + 
-    theme(
-      plot.title = element_text(color = "black", size = 20 , face = "bold"),
-      axis.title.x = element_text(color = "black", size = 20, face = "bold"),
-      axis.title.y = element_text(color = "black", size = 20, face = "bold"),
-      legend.title = element_text(color = "black", size = 16, face = "bold", angle = 90)
-    ) +
-    scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")),
-                           guide = guide_colourbar("Mitochondrial fraction", title.position = "right", title.vjust = 0.5, title.hjust = 0.5, barwidth = 1.0, barheight = 60))
+    labs(x  = "Count depth", y = "Unique Genes") + 
+    theme(axis.title.x = element_text(size = 14, face = "bold", vjust = -1),
+          axis.title.y = element_text(size = 14, face = "bold"),
+          legend.title = element_text(size = 14, face = "bold",  angle = 90)) +
+    scale_color_viridis(guide = guide_colourbar("Mitochondrial Fraction", title.position = "right", title.vjust = 0.5, title.hjust = 0.5, barwidth = 1.0, barheight = 20))
   
   return(scatter.plot)
 }
 
 # histograms
+#QC.histograms <- function(data){
+#  histograms <- list()
+#  
+#  # distribution of genes per cell
+#  hist1 <- qplot(x =data[["nFeature_RNA"]]$nFeature_RNA , fill=..count.., geom="histogram", binwidth = 100,
+#                 xlab = "Unique genes per cell",
+#                 ylab = "Frequency",
+#                 main = "Gene Count Distribution") + scale_fill_gradient(guide=FALSE)
+#  histograms[[1]] <- hist1
+#  
+#  # distribution of count depth
+#  hist2 <- qplot(x =data[["nCount_RNA"]]$nCount_RNA, fill=..count.., geom="histogram", binwidth = 1000,
+#                 xlab = "Count depth per cell",
+#                 ylab = "Frequency",
+#                 main = "Transcript Count Distribution") + scale_fill_gradient(guide=FALSE)
+#  histograms[[2]] <- hist2
+#  
+#  # distribution of mitochondrial gene fraction
+#  hist3 <- qplot(x =data[["percent.mt"]]$percent.mt, fill=..count.., geom="histogram", binwidth = 1,
+#                 xlab = "Mitochondrial fraction per cell",
+#                 ylab = "Frequency",
+#                 main = "Mitochondrial Reads Fraction") + scale_fill_gradient(guide=FALSE)
+#  histograms[[3]] <- hist3
+#  return(histograms)
+#}
+
 QC.histograms <- function(data){
   histograms <- list()
   
   # distribution of genes per cell
-  hist1 <- qplot(x =data[["nFeature_RNA"]]$nFeature_RNA , fill=..count.., geom="histogram", binwidth = 100,
-                 xlab = "Unique genes per cell",
-                 ylab = "Frequency",
-                 main = "Gene Count Distribution")+scale_fill_gradient(low="lightblue", high="darkblue")
+  hist1 <- ggplot(data=data[["nFeature_RNA"]], aes(x=nFeature_RNA)) +
+    geom_histogram(aes(fill = ..count..), binwidth=100) + 
+    scale_fill_gradient(guide=FALSE) + 
+    scale_x_continuous(limits = c(0, 7500)) +
+    labs(x="Unique Genes per cell", y="Freqency") +
+    theme(axis.title = element_text(size = 14, face = "bold", vjust = -1), axis.text = element_text(size = 10), plot.margin = margin(1, 0.5, 1, 0.5, "cm"))
   histograms[[1]] <- hist1
   
   # distribution of count depth
-  hist2 <- qplot(x =data[["nCount_RNA"]]$nCount_RNA, fill=..count.., geom="histogram", binwidth = 500,
-                 xlab = "Count depth per cell",
-                 ylab = "Frequency",
-                 main = "Transcript Count Distribution")+scale_fill_gradient(low="orange", high="red")
+  hist2 <- ggplot(data=data[["nCount_RNA"]], aes(x=nCount_RNA)) +
+    geom_histogram(aes(fill = ..count..), binwidth=1000) + 
+    scale_fill_gradient(guide=FALSE) + 
+    scale_x_continuous(limits = c(0, 50000)) +
+    labs(x="Count Depth per cell", y="Freqency") +
+    theme(axis.title = element_text(size = 14, face = "bold", vjust = -1), axis.text = element_text(size = 10), plot.margin = margin(1, 0.5, 1, 0.5, "cm")) 
   histograms[[2]] <- hist2
   
   # distribution of mitochondrial gene fraction
-  hist3 <- qplot(x =data[["percent.mt"]]$percent.mt, fill=..count.., geom="histogram", binwidth = 0.1,
-                 xlab = "Mitochondrial fraction per cell",
-                 ylab = "Frequency",
-                 main = "Mitochondrial Reads Fraction")+scale_fill_gradient(low="lightgreen", high="darkgreen")
+  hist3 <- ggplot(data=data[["percent.mt"]], aes(x=percent.mt)) +
+    geom_histogram(aes(fill = ..count..), binwidth=1) + 
+    scale_fill_gradient(guide=FALSE) + 
+    labs(x="Mitochondrial Reads Fraction per cell", y="Freqency") +
+    theme(axis.title = element_text(size = 14, face = "bold", vjust = -1), axis.text = element_text(size = 10), plot.margin = margin(1, 0.5, 1, 0.5, "cm")) 
   histograms[[3]] <- hist3
+  
   return(histograms)
 }
 
@@ -135,18 +164,24 @@ png(paste0(lung.healthy.path,"QC.raw.nFeature_RNA.1.png"), width=1500,height=500
 print(nFeature.plot1)
 dev.off()
 
-nFeature.plot2 <- VlnPlot(lung.healthy, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+nFeature.plot2 <- VlnPlot(lung.healthy, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0) + 
+  labs(title = NULL, x = "Gene Count Distribution per sample") +
+  theme(axis.title.x = element_text(size = 14, face = "bold"), axis.text = element_text(size = 10)) + 
+  NoLegend()
 png(paste0(lung.healthy.path,"QC.raw.nFeature_RNA.2.png"), width=1500,height=500,units="px")
 print(nFeature.plot2)
 dev.off()
 
 # unique transcripts per cell
-nCount.plot1 <- VlnPlot(lung.healthy, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5)
+nCount.plot1 <- VlnPlot(lung.healthy, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0.5) 
 png(paste0(lung.healthy.path,"QC.raw.nCount_RNA.1.png"), width=1500,height=500,units="px")
 print(nCount.plot1)
 dev.off()
 
-nCount.plot2 <- VlnPlot(lung.healthy, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+nCount.plot2 <- VlnPlot(lung.healthy, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0) + 
+  labs(title = NULL, x = "Count Depth Distribution per sample") +
+  theme(axis.title.x = element_text(size = 14, face = "bold"), axis.text = element_text(size = 10)) + 
+  NoLegend()
 png(paste0(lung.healthy.path,"QC.raw.nCount_RNA.2.png"), width=1500,height=500,units="px")
 print(nCount.plot2)
 dev.off()
@@ -157,7 +192,10 @@ png(paste0(lung.healthy.path,"QC.raw.percent.mt.1.png"), width=1500,height=500,u
 print(percent.mt.plot1)
 dev.off()
 
-percent.mt.plot2 <- VlnPlot(lung.healthy, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+percent.mt.plot2 <- VlnPlot(lung.healthy, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0) + 
+  labs(title = NULL, x = "Mitochondrial Reads Fraction per sample") +
+  theme(axis.title.x = element_text(size = 14, face = "bold"), axis.text = element_text(size = 10)) + 
+  NoLegend()
 png(paste0(lung.healthy.path,"QC.raw.percent.mt.2.png"), width=1500,height=500,units="px")
 print(percent.mt.plot2)
 dev.off()
@@ -171,8 +209,20 @@ dev.off()
 
 ## QC scatter plot ##
 QC.scatter.raw <- QC.scatter(lung.healthy)
-png(paste0(lung.healthy.path,"QC.raw.scatter.png"), width=1600, height=1000,units="px")
+png(paste0(lung.healthy.path,"QC.raw.scatter.png"), width=600, height=500,units="px")
 print(QC.scatter.raw)
+dev.off()
+
+### dissertation plot 1 ###
+QC.summary.raw <- QC.histograms.raw[[1]] + nFeature.plot2 + QC.histograms.raw[[2]] + nCount.plot2 + QC.histograms.raw[[3]] + percent.mt.plot2 + plot_layout(ncol = 2, widths = c(1, 2))
+png(paste0(lung.healthy.path,"QC.summary_1.raw.png"), width=1200, height=800,units="px")
+print(QC.summary.raw)
+dev.off()
+
+### dissertation plot 2
+QC.summary.raw <- QC.histograms.raw[[1]] + QC.histograms.raw[[2]] + QC.histograms.raw[[3]] + QC.scatter.raw + plot_layout(ncol = 2, widths = c(2, 2))
+png(paste0(lung.healthy.path,"QC.summary_2.raw.png"), width=1200, height=1200,units="px")
+print(QC.summary.raw)
 dev.off()
 
 ### doublet detection with scrublet ###
@@ -261,7 +311,10 @@ png(paste0(lung.healthy.path,"QC.filtered.nFeature_RNA.1.png"), width=1500,heigh
 print(nFeature.plot1)
 dev.off()
 
-nFeature.plot2 <- VlnPlot(lung.healthy.filtered, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0)
+nFeature.plot2 <- VlnPlot(lung.healthy.filtered, features = c("nFeature_RNA"), group.by = "patient.ID", pt.size = 0) + 
+  labs(title = NULL, x = "Count Depth Distribution per sample") +
+  theme(axis.title.x = element_text(size = 14, face = "bold"), axis.text = element_text(size = 10)) + 
+  NoLegend()
 png(paste0(lung.healthy.path,"QC.filtered.nFeature_RNA.2.png"), width=1500,height=500,units="px")
 print(nFeature.plot2)
 dev.off()
@@ -272,7 +325,10 @@ png(paste0(lung.healthy.path,"QC.filtered.nCount_RNA.1.png"), width=1500,height=
 print(nCount.plot1)
 dev.off()
 
-nCount.plot2 <- VlnPlot(lung.healthy.filtered, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0)
+nCount.plot2 <- VlnPlot(lung.healthy.filtered, features = c("nCount_RNA"), group.by = "patient.ID", pt.size = 0) + 
+  labs(title = NULL, x = "Count Depth Distribution per sample") +
+  theme(axis.title.x = element_text(size = 14, face = "bold"), axis.text = element_text(size = 10)) + 
+  NoLegend()
 png(paste0(lung.healthy.path,"QC.filtered.nCount_RNA.2.png"), width=1500,height=500,units="px")
 print(nCount.plot2)
 dev.off()
@@ -283,9 +339,24 @@ png(paste0(lung.healthy.path,"QC.filtered.percent.mt.1.png"), width=1500,height=
 print(percent.mt.plot1)
 dev.off()
 
-percent.mt.plot2 <- VlnPlot(lung.healthy.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0)
+percent.mt.plot2 <- VlnPlot(lung.healthy.filtered, features = c("percent.mt"), group.by = "patient.ID", pt.size = 0) + 
+  labs(title = NULL, x = "Mitochondrial Reads Fraction per sample") +
+  theme(axis.title.x = element_text(size = 14, face = "bold"), axis.text = element_text(size = 10)) + 
+  NoLegend()
 png(paste0(lung.healthy.path,"QC.filtered.percent.mt.2.png"), width=1500,height=500,units="px")
 print(percent.mt.plot2)
+dev.off()
+
+### dissertation plot 1 ###
+QC.summary.filtered <- QC.histograms.filtered[[1]] + nFeature.plot2 + QC.histograms.filtered[[2]] + nCount.plot2 + QC.histograms.filtered[[3]] + percent.mt.plot2 + plot_layout(ncol = 2, widths = c(1, 2))
+png(paste0(lung.healthy.path,"QC.summary_1.filtered.png"), width=1200, height=800,units="px")
+print(QC.summary.filtered)
+dev.off()
+
+### dissertation plot 2
+QC.summary.filtered<- QC.histograms.filtered[[1]] + QC.histograms.filtered[[2]] + QC.histograms.filtered[[3]] + QC.scatter.filtered + plot_layout(ncol = 2, widths = c(2, 2))
+png(paste0(lung.healthy.path,"QC.summary_2.filtered.png"), width=1200, height=1200,units="px")
+print(QC.summary.filtered)
 dev.off()
 
 ### save data: 44873 healthy cells ###
