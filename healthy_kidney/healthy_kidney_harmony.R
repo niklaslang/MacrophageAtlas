@@ -167,7 +167,7 @@ MNP.genes <- c("CD14", "FCGR3A","CSF1R", "CD68", "LYZ",
                "TREM2",	"CD9",	"VCAN")
 
 MNP.kidney.genes <- c("CD14", "FCGR3A", "CSF2RA", "FCGR2A",
-                "C1QA", "RGS1", "CD52", "SEPP1")
+                      "C1QA", "RGS1", "CD52", "SEPP1")
 # cDC 1 genes
 cDC1.genes <- c("XCR1", "CLEC10A", "FCER1A", "CLEC9A")
 
@@ -211,7 +211,7 @@ epithelial.genes <- c("EPCAM",
                       "SLC12A1", #TAL
                       "SPP1", #tLOH
                       "LRP2", "SLC34A1" #PCT
-                      )
+)
 
 # endothelial cells
 endothelial.genes <- c("KDR",	"CD34", "VWF", "CLDN5", "PECAM1", 
@@ -221,7 +221,7 @@ endothelial.genes <- c("KDR",	"CD34", "VWF", "CLDN5", "PECAM1",
 mesenchymal.genes <- c("COL1A1",	"COL3A1", "ACTA2", "MYH11",	"PDGFRA", 
                        "PDGFRB", "MSLN",	"DCN",
                        "RGS5" #vSMC
-                       )
+)
 
 # proliferating cells
 proliferation.genes <- c("MKI67",	"TOP2A")
@@ -475,10 +475,16 @@ cluster.annotation <- c("Healthy Kidney PCT 1", "Healthy Kidney PCT 2", "Healthy
                         "Healthy Kidney Macrophage", "Healthy Kidney Capillary Endo", "Healthy Kidney Intercalated Cell Type B", 
                         "Healthy Kidney Pelvic Epithelium", "Healthy Kidney Podocyte", "Healthy Kidney Distinct PCT 1", 
                         "Healthy Kidney PCT 7", "Healthy Kidney PCT 8", "Healthy Kidney PCT 9"
-                        )
+)
 
 names(cluster.annotation) <- levels(kidney.harmony)
 kidney.harmony <- RenameIdents(kidney.harmony, cluster.annotation)
+# add cell types to meta data
+cell.data <- data.table(barcode = colnames(kidney.harmony),
+                        celltype = Idents(kidney.harmony))
+cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
+cell.data$barcode <- NULL
+kidney.harmony <- AddMetaData(kidney.harmony, cell.data, col.name = "celltype")
 
 # save annotated UMAP
 annotated.umap.plot <- DimPlot(kidney.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
@@ -494,7 +500,7 @@ lineage.annotation <- c("Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epi
                         "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "NK cell", "Endothelia",
                         "Epithelia", "Epithelia", "Epithelia", "MP", "Endothelia", "Epithelia", "Mesenchyme", "MP", "Endothelia",
                         "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia", "Epithelia"
-                        )
+)
 
 lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
 meta.data <- merge(cell.data, lineage.data, by = "celltype")
