@@ -40,6 +40,8 @@ cell.data <- data.table(barcode = colnames(liver),
                         celltype = Idents(liver),
                         lineage = liver$lineage_integrated)
 cell.data[, celltype_ordered := ifelse(lineage == "T cell" | lineage == "NK cell", paste0(celltype), "Other")]
+cell.data[, celltype_ordered := ifelse(celltype_ordered == "Combined Liver NK Cell 4", "Other", paste0(celltype_ordered))]
+cell.data[, celltype_ordered := ifelse(celltype_ordered == "Combined Liver NK Cell 3", "Combined Liver NK cell 3", paste0(celltype_ordered))]
 cell.data[, celltype_ordered := ifelse(celltype_ordered == "Combined Liver NK1", "Combined Liver NK cell 1", paste0(celltype_ordered))]
 cell.data[, celltype_ordered := ifelse(celltype_ordered == "Combined Liver NK2", "Combined Liver NK cell 2", paste0(celltype_ordered))]
 cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
@@ -49,8 +51,10 @@ cell.data$barcode <- NULL
 liver <- AddMetaData(liver, cell.data, col.name = "celltype_ordered")
 # reorder lineage factors
 liver$celltype_ordered = factor(liver$celltype_ordered)
+
 # NKT subset
-NKT <- subset(liver, subset = lineage_integrated == "T cell" | lineage_integrated == "NK cell")
+NKT <- subset(liver, subset = celltype_ordered != "Other")
+#NKT <- subset(liver, subset = lineage_integrated == "T cell" | lineage_integrated == "NK cell" & celltype_ordered != )
 
 ### convert seurat objects to sce ###
 NKT.sce <- as.SingleCellExperiment(NKT)
@@ -73,7 +77,7 @@ colData(NKT.sce) %>%
 head(colData(NKT.sce))
 
 # store number of cluster and number of samples
-n.clusters <- length(kids <- set_names(levels(NKT.sce$Celltype)[c(1,2,3,4,5,6,7,8,9)]))
+n.clusters <- length(kids <- set_names(levels(NKT.sce$Celltype)[c(1,2,3,4,5,6,7,8)]))
 n.samples <- length(sids <- set_names(levels(NKT.sce$Patient.ID)))
 
 # summary of experimental design
@@ -85,7 +89,7 @@ n_cells <- as.numeric(table(NKT.sce$Sample.ID))
     select(-c("Celltype", "Lineage", "Cluster.ID")))
 
 # calculate cell type abundance per sample
-n_cells <- table(NKT.sce$Celltype, NKT.sce$Patient.ID)[c(1,2,3,4,5,6,7,8,9),]
+n_cells <- table(NKT.sce$Celltype, NKT.sce$Patient.ID)[c(1,2,3,4,5,6,7,8),]
 
 # calculate cell/lineage proportions across samples
 freqs_cells <- prop.table(n_cells, margin = 1)
@@ -105,13 +109,13 @@ df.celltypes$Condition <- factor(df.celltypes$Condition, levels(df.celltypes$Con
 
 # create celltype composition data table: healthy vs fibrotic
 df.NKT.fibrotic <- df.celltypes[df.celltypes$Condition == "fibrotic",]
-df.NKT.fibrotic$Pair.ID <- rep(1:5, each = 9)
-df.NKT.fibrotic$Pair.ID <- paste0(df.NKT.fibrotic$Pair.ID, "_", rep(1:9, 5))
+df.NKT.fibrotic$Pair.ID <- rep(1:5, each = 8)
+df.NKT.fibrotic$Pair.ID <- paste0(df.NKT.fibrotic$Pair.ID, "_", rep(1:8, 5))
 df.NKT.fibrotic$fibrotic_frequency <- df.NKT.fibrotic$Frequency
 NKT.fibrotic.dt <- data.table(df.NKT.fibrotic[c("Celltype", "Pair.ID", "fibrotic_frequency")])
 df.NKT.healthy <- df.celltypes[df.celltypes$Condition == "healthy",]
-df.NKT.healthy$Pair.ID <- rep(1:5, each = 9)
-df.NKT.healthy$Pair.ID <- paste0(df.NKT.healthy$Pair.ID, "_", rep(1:9, 5))
+df.NKT.healthy$Pair.ID <- rep(1:5, each = 8)
+df.NKT.healthy$Pair.ID <- paste0(df.NKT.healthy$Pair.ID, "_", rep(1:8, 5))
 df.NKT.healthy$healthy_frequency <- df.NKT.healthy$Frequency
 NKT.healthy.dt <- data.table(df.NKT.healthy[c("Celltype", "Pair.ID", "healthy_frequency")])
 
@@ -131,14 +135,14 @@ abundance.pairs.dt[, sd := sd(log.ratio), by= Celltype]
 abundance.pairs <- data.frame(abundance.pairs.dt)
 
 # reorder celltype factors 
-abundance.pairs$Celltype <- factor(abundance.pairs$Celltype, levels(abundance.pairs$Celltype)[c(9,8,7,6,5,4,3,2,1)])
+abundance.pairs$Celltype <- factor(abundance.pairs$Celltype, levels(abundance.pairs$Celltype)[c(8,7,6,5,4,3,2,1)])
 
 #################
 ### DA FIGURE ###
 #################
 
 # seurat colours
-seurat.colours <- hue_pal()(9)
+seurat.colours <- hue_pal()(8)
 
 # plot UMAP
 NKT.celltype.umap <- DimPlot(liver, reduction = "umap", group.by = "celltype_ordered", cols = c(seurat.colours,"#999999"), label = TRUE, repel = TRUE, pt.size = 0.1) +
@@ -154,7 +158,7 @@ dev.off()
 NKT.celltype.barplot <- ggplot(df.celltypes, aes(x = Condition, y = Frequency, fill = Celltype)) +
   geom_bar(stat = "identity", position = "fill") +
   theme_classic() + 
-  labs(x = "Condition", y = "Proportion of each NKT population", fill = "Cell type") +
+  labs(x = "Condition", y = "Proportion of each NKT cell population", fill = "Cell type") +
   theme(axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12), 
         axis.title.x = element_text(size = 16, vjust = -1),
