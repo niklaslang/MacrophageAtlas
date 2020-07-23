@@ -1,7 +1,6 @@
 library(Seurat)
 library(scater)
 library(SingleCellExperiment)
-library(data.table)
 library(edgeR)
 library(reticulate)
 library(umap)
@@ -19,6 +18,7 @@ library(pheatmap)
 library(scales)
 library(RColorBrewer)
 library(viridis)
+library(ggsci)
 library(patchwork)
 
 ### path variables ###
@@ -45,12 +45,16 @@ MP <- subset(liver, subset = lineage_integrated == "MP") # 11999 cells
 # T cells
 NKTcell <- subset(liver, subset = lineage_integrated == "T cell" | lineage_integrated == "NK cell") # 37253 cells
 
+# mesenchymal cells
+mesenchyme <- subset(liver, subset = lineage_integrated == "Mesenchyme") # 2578 cells
+
 ### convert seurat objects to sce ###
 liver.sce <- as.SingleCellExperiment(liver)
 immune.sce <- as.SingleCellExperiment(immune)
 endothelia.sce <- as.SingleCellExperiment(endothelial)
 MP.sce <- as.SingleCellExperiment(MP)
 NKTcell.sce <- as.SingleCellExperiment(NKTcell)
+mesenchyme.sce <- as.SingleCellExperiment(mesenchyme)
 
 #################
 ### FUNCTIONS ###
@@ -84,6 +88,10 @@ abundance_barplot <- function(data, level, split, x_label, legend_title){
           strip.text.x = element_text(size=16)) +
     scale_fill_viridis(discrete=TRUE)
   return(plot)
+}
+
+logFC_boxplot <- function(){
+  
 }
 
 ###############
@@ -184,7 +192,7 @@ abundances <- unclass(abundances)
 head(abundances)
 
 # attaching some column metadata
-extra.info <- colData(liver.sce)[match(colnames(abundances), liver.sce$Sample.ID),]
+extra.info <- colData(liver.sce)[match(colnames(abundances), liver.sce$Sample.ID),][-c("Celltype")]
 y.ab <- DGEList(abundances, samples=extra.info)
 y.ab
 
@@ -208,10 +216,43 @@ summary(fit.ab$df.prior)
 plotQLDisp(fit.ab, cex=1)
 
 # test for differences in abundance between healthy and fibrotic tissue
-res <- glmQLFTest(fit.ab, coef=ncol(design))
+results <- glmQLFTest(fit.ab, coef=ncol(design))
 summary(decideTests(res))
-topTags(res)
 write.csv(res, file = paste0(DA.path, "overall_lineage_abundance.csv"))
+df.results <- data.frame(results)
+df.results["Lineage"] <- rownames(df.results)
+df.results["dispersion"] <- results$var.post
+
+### DA visualisation: logFC barplot change ###
+g1 <- 
+  ggplot(df.results, aes(x = Lineage, y = logFC, color = Lineage)) +
+  coord_flip() +
+  scale_y_continuous(limits = c(-5, 5), expand = c(0.005, 0.005)) +
+  scale_color_viridis(discrete = TRUE) +
+  labs(x = "Lineage", y = "logFC") +
+  theme(
+    legend.position = "none",
+    axis.title = element_text(size = 12),
+    axis.text = element_text(family = "Roboto Mono", size = 12),
+    panel.grid = element_blank()
+  )
+
+g1 + 
+  geom_boxplot() +
+  geom_errorbar(aes(ymin= logFC-dispersion, ymax=logFC+dispersion), width=.2,
+                position=position_dodge(.9)) 
+
+
+g2 <- 
+  ggplot(df.lineages, aes(x = Condition, y = Frequency, fill = Condition)) +
+  geom_boxplot(outlier.colour = NA) +
+  facet_wrap(~ Lineage, scales = "free_y", ncol = 11) +
+  theme_classic() +
+  theme(axis.title = element_text(size = 20), axis.text = element_text(size = 16), strip.text = element_text(size = 16)) +
+  scale_fill_viridis(discrete=TRUE)
+png(paste0(DA.path, "overall_lineage_abundance.boxplot.png"), width=1800,height=600,units="px")
+print(g2)
+dev.off()
 
 ##############
 ### IMMUNE ###
@@ -723,6 +764,113 @@ write.csv(res, file = paste0(DA.path, "endothelia_celltype_abundance.csv"))
 ##################
 ### MESENCHYME ###
 ##################
+
+### create meta data data frame ###
+colData(mesenchyme.sce) %>% 
+  as.data.frame %>% 
+  transmute(
+    Condition = condition, 
+    Patient.ID = patient.ID,
+    Sample.ID = patient.ID,
+    Cluster.ID = seurat_clusters,
+    Celltype = celltype_integrated,
+    Lineage = lineage_integrated) %>%
+  mutate_all(as.factor) %>% 
+  set_rownames(colnames(mesenchyme.sce)) %>% 
+  DataFrame -> colData(mesenchyme.sce)
+
+# view data frame
+head(colData(mesenchyme.sce))
+
+# store number of cluster and number of samples
+n.clusters <- length(kids <- set_names(levels(mesenchyme.sce$Celltype)[c(16,25)]))
+n.samples <- length(sids <- set_names(levels(mesenchyme.sce$Patient.ID)))
+
+# summary of experimental design
+m <- match(sids, mesenchyme.sce$Sample.ID)
+n_cells <- as.numeric(table(mesenchyme.sce$Sample.ID))
+
+(ei <- data.frame(colData(mesenchyme.sce)[m, ], 
+                  n_cells, row.names = NULL) %>% 
+    select(-c("Celltype", "Lineage", "Cluster.ID")))
+
+# calculate cell type abundance per sample
+n_cells <- table(mesenchyme.sce$Celltype, mesenchyme.sce$Patient.ID)[c(16,25),]
+
+# calculate cell/lineage proportions across samples
+freqs_cells <- prop.table(n_cells, margin = 1)
+
+# prepare data.frames for visualisation
+df.celltypes <- data.frame(
+  Frequency = as.numeric(freqs_cells), 
+  Celltype = rep(kids, n.samples),
+  Sample.ID = rep(sids, each = n.clusters))
+m <- match(df.celltypes$Sample.ID, ei$Sample.ID)
+df.celltypes$Condition <- ei$Condition[m]
+
+### visualisation ###
+# visualise celltype composition at patient level
+mesenchyme_celltype_patient.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Sample.ID, "Cell type", "Patient ID")
+png(paste0(DA.path, "mesenchyme_celltype_patient.composition.barplot.png"), width=300,height=600,units="px")
+print(mesenchyme_celltype_patient.composition)
+dev.off()
+
+# visualise celltype composition at condition level
+mesenchyme_celltype_condition.composition <- composition_barplot(df.celltypes, df.celltypes$Celltype, df.celltypes$Condition, "Cell type", "Condition")
+png(paste0(DA.path, "mesenchyme_celltype_condition.composition.barplot.png"), width=300,height=600,units="px")
+print(mesenchyme_celltype_condition.composition)
+dev.off()
+
+# compare composition plots
+mesenchyme_celltype_composition <- mesenchyme_celltype_condition.composition + mesenchyme_celltype_patient.composition
+png(paste0(DA.path, "mesenchyme_celltype_composition.barplot.png"), width=600,height=600,units="px")
+print(mesenchyme_celltype_composition)
+dev.off()
+
+# visualise cell type abundance
+# barplot of relative  celltype abundances
+mesenchyme_celltype_abundance <- abundance_barplot(df.celltypes, df.celltypes$Sample.ID, df.celltypes$Celltype, "Patient ID", "Cell type")
+png(paste0(DA.path, "mesenchyme_celltype_abundance.barplot.png"), width=1100,height=600,units="px")
+print(mesenchyme_celltype_abundance)
+dev.off()
+
+### DA analysis ###
+# abundance table
+abundances <- table(mesenchyme.sce$Celltype, mesenchyme.sce$Sample.ID) 
+abundances <- unclass(abundances)
+abundances <- data.frame(abundances)
+abundances$Healthy_5 <- NULL
+abundances$Cirrhotic_5 <- NULL
+
+# attaching some column metadata.
+extra.info <- colData(liver.sce)[match(colnames(abundances), liver.sce$Sample.ID),]
+y.ab <- DGEList(abundances, samples=extra.info)
+y.ab
+
+# filter out low-abundance labels
+keep <- filterByExpr(y.ab, group=y.ab$samples$Condition)
+y.ab <- y.ab[keep,]
+summary(keep)
+
+# create design matrix
+design <- model.matrix(~ factor(Condition), y.ab$samples)
+
+# estimate the NB dipersion for each cell type
+y.ab <- estimateDisp(y.ab, design, trend="none")
+summary(y.ab$common.dispersion)
+plotBCV(y.ab, cex=1)
+
+# estimate QL dispersion for each cell type
+fit.ab <- glmQLFit(y.ab, design, robust=TRUE, abundance.trend=FALSE)
+summary(fit.ab$var.prior)
+summary(fit.ab$df.prior)
+plotQLDisp(fit.ab, cex=1)
+
+# test for differences in abundance between healthy and fibrotic tissue
+res <- glmQLFTest(fit.ab, coef=ncol(design))
+summary(decideTests(res))
+topTags(res)
+write.csv(res, file = paste0(DA.path, "MP_celltype_abundance.csv"))
 
 #################
 ### EPITHELIA ###
