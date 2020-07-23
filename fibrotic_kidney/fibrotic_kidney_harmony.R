@@ -373,6 +373,12 @@ cluster.annotation <- c("Fibrotic Kidney Thick Ascending LOH 2", "Fibrotic Kidne
 
 names(cluster.annotation) <- levels(kidney.harmony)
 kidney.harmony <- RenameIdents(kidney.harmony, cluster.annotation)
+# add cell types to meta data
+cell.data <- data.table(barcode = colnames(kidney.harmony),
+                        celltype = Idents(kidney.harmony))
+cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
+cell.data$barcode <- NULL
+kidney.harmony <- AddMetaData(kidney.harmony, cell.data, col.name = "celltype")
 
 # save annotated UMAP
 annotated.umap.plot <- DimPlot(kidney.harmony, reduction = "umap", label = T, label.size = 5, pt.size = 0.1)
@@ -405,7 +411,7 @@ print(annotated.umap.plot)
 dev.off()
 
 ### save R session ###
-save.image(file = "/home/s1987963/ds_group/Niklas/fibrotic_kidney/harmonize_samples/fibrotic_kidney_harmony.RData")
+save.image(file = "~/ds_group/Niklas/fibrotic_kidney/harmonize_samples/fibrotic_kidney_harmony.RData")
 
 ### save data ###
-saveRDS(kidney.harmony, "/home/s1987963/ds_group/Niklas/fibrotic_organs/fibrotic_kidney_annotated.rds")
+saveRDS(kidney.harmony, "~/ds_group/Niklas/fibrotic_organs/fibrotic_kidney_annotated.rds")
