@@ -42,8 +42,10 @@ endothelial <- subset(liver, subset = lineage_integrated == "Endothelia") # 1280
 # MPs
 MP <- subset(liver, subset = lineage_integrated == "MP") # 11999 cells
 
-# T cells
+# NK/T cells
 NKTcell <- subset(liver, subset = lineage_integrated == "T cell" | lineage_integrated == "NK cell") # 37253 cells
+Tcell <- subset(liver, subset = lineage_integrated == "T cell") # 24290 cells
+NKcell <- subset(liver, subset = lineage_integrated == "NK cell") # 12963 cells
 
 # mesenchymal cells
 mesenchyme <- subset(liver, subset = lineage_integrated == "Mesenchyme") # 2578 cells
@@ -54,6 +56,8 @@ immune.sce <- as.SingleCellExperiment(immune)
 endothelia.sce <- as.SingleCellExperiment(endothelial)
 MP.sce <- as.SingleCellExperiment(MP)
 NKTcell.sce <- as.SingleCellExperiment(NKTcell)
+NKcell.sce <- as.SingleCellExperiment(NKcell)
+Tcell.sce <- as.SingleCellExperiment(Tcell)
 mesenchyme.sce <- as.SingleCellExperiment(mesenchyme)
 
 #################
@@ -192,7 +196,7 @@ abundances <- unclass(abundances)
 head(abundances)
 
 # attaching some column metadata
-extra.info <- colData(liver.sce)[match(colnames(abundances), liver.sce$Sample.ID),][-c("Celltype")]
+extra.info <- colData(liver.sce)[match(colnames(abundances), liver.sce$Sample.ID),]
 y.ab <- DGEList(abundances, samples=extra.info)
 y.ab
 
@@ -217,42 +221,8 @@ plotQLDisp(fit.ab, cex=1)
 
 # test for differences in abundance between healthy and fibrotic tissue
 results <- glmQLFTest(fit.ab, coef=ncol(design))
-summary(decideTests(res))
-write.csv(res, file = paste0(DA.path, "overall_lineage_abundance.csv"))
-df.results <- data.frame(results)
-df.results["Lineage"] <- rownames(df.results)
-df.results["dispersion"] <- results$var.post
-
-### DA visualisation: logFC barplot change ###
-g1 <- 
-  ggplot(df.results, aes(x = Lineage, y = logFC, color = Lineage)) +
-  coord_flip() +
-  scale_y_continuous(limits = c(-5, 5), expand = c(0.005, 0.005)) +
-  scale_color_viridis(discrete = TRUE) +
-  labs(x = "Lineage", y = "logFC") +
-  theme(
-    legend.position = "none",
-    axis.title = element_text(size = 12),
-    axis.text = element_text(family = "Roboto Mono", size = 12),
-    panel.grid = element_blank()
-  )
-
-g1 + 
-  geom_boxplot() +
-  geom_errorbar(aes(ymin= logFC-dispersion, ymax=logFC+dispersion), width=.2,
-                position=position_dodge(.9)) 
-
-
-g2 <- 
-  ggplot(df.lineages, aes(x = Condition, y = Frequency, fill = Condition)) +
-  geom_boxplot(outlier.colour = NA) +
-  facet_wrap(~ Lineage, scales = "free_y", ncol = 11) +
-  theme_classic() +
-  theme(axis.title = element_text(size = 20), axis.text = element_text(size = 16), strip.text = element_text(size = 16)) +
-  scale_fill_viridis(discrete=TRUE)
-png(paste0(DA.path, "overall_lineage_abundance.boxplot.png"), width=1800,height=600,units="px")
-print(g2)
-dev.off()
+results <- topTags(results)
+write.csv(results$table, file = paste0(DA.path, "overall_lineage_abundance.csv"))
 
 ##############
 ### IMMUNE ###
@@ -540,12 +510,12 @@ plotQLDisp(fit.ab, cex=1)
 # test for differences in abundance between healthy and fibrotic tissue
 res <- glmQLFTest(fit.ab, coef=ncol(design))
 summary(decideTests(res))
-topTags(res)
-write.csv(res, file = paste0(DA.path, "MP_celltype_abundance.csv"))
+results <- topTags(res)
+write.csv(results$table, file = paste0(DA.path, "MP_celltype_abundance.csv"))
 
-###############
+#################
 ### NKT CELLS ###
-###############
+#################
 
 ### create meta data data frame ###
 colData(NKTcell.sce) %>% 
@@ -649,12 +619,112 @@ plotQLDisp(fit.ab, cex=1)
 # test for differences in abundance between healthy and fibrotic tissue
 res <- glmQLFTest(fit.ab, coef=ncol(design))
 summary(decideTests(res))
-topTags(res)
-write.csv(res, file = paste0(DA.path, "NKTcell_celltype_abundance.csv"))
+results <- topTags(res)
+write.csv(results$table, file = paste0(DA.path, "NKTcell_celltype_abundance.csv"))
 
-###################
-### ENDOTHELIAL ###
-###################
+### DA analysis for T cells only ###
+# reformat meta data
+colData(Tcell.sce) %>% 
+  as.data.frame %>% 
+  transmute(
+    Condition = condition, 
+    Patient.ID = patient.ID,
+    Sample.ID = patient.ID,
+    Cluster.ID = seurat_clusters,
+    Celltype = celltype_integrated,
+    Lineage = lineage_integrated) %>%
+  mutate_all(as.factor) %>% 
+  set_rownames(colnames(Tcell.sce)) %>% 
+  DataFrame -> colData(Tcell.sce)
+
+# abundance table
+abundances <- table(Tcell.sce$Celltype, Tcell.sce$Sample.ID) 
+abundances <- unclass(abundances) 
+head(abundances)
+
+# attaching some column metadata.
+extra.info <- colData(liver.sce)[match(colnames(abundances), liver.sce$Sample.ID),]
+y.ab <- DGEList(abundances, samples=extra.info)
+y.ab
+
+# filter out low-abundance labels
+keep <- filterByExpr(y.ab, group=y.ab$samples$Condition)
+y.ab <- y.ab[keep,]
+summary(keep)
+
+# create design matrix
+design <- model.matrix(~ factor(Condition), y.ab$samples)
+
+# estimate the NB dipersion for each cell type
+y.ab <- estimateDisp(y.ab, design, trend="none")
+summary(y.ab$common.dispersion)
+plotBCV(y.ab, cex=1)
+
+# estimate QL dispersion for each cell type
+fit.ab <- glmQLFit(y.ab, design, robust=TRUE, abundance.trend=FALSE)
+summary(fit.ab$var.prior)
+summary(fit.ab$df.prior)
+plotQLDisp(fit.ab, cex=1)
+
+# test for differences in abundance between healthy and fibrotic tissue
+res <- glmQLFTest(fit.ab, coef=ncol(design))
+summary(decideTests(res))
+results <- topTags(res)
+write.csv(results$table, file = paste0(DA.path, "Tcell_celltype_abundance.csv"))
+
+### DA analysis for NK cells only ###
+# reformat meta data
+colData(NKcell.sce) %>% 
+  as.data.frame %>% 
+  transmute(
+    Condition = condition, 
+    Patient.ID = patient.ID,
+    Sample.ID = patient.ID,
+    Cluster.ID = seurat_clusters,
+    Celltype = celltype_integrated,
+    Lineage = lineage_integrated) %>%
+  mutate_all(as.factor) %>% 
+  set_rownames(colnames(NKcell.sce)) %>% 
+  DataFrame -> colData(NKcell.sce)
+
+# abundance table
+abundances <- table(NKcell.sce$Celltype, NKcell.sce$Sample.ID) 
+abundances <- unclass(abundances) 
+head(abundances)
+
+# attaching some column metadata.
+extra.info <- colData(liver.sce)[match(colnames(abundances), liver.sce$Sample.ID),]
+y.ab <- DGEList(abundances, samples=extra.info)
+y.ab
+
+# filter out low-abundance labels
+keep <- filterByExpr(y.ab, group=y.ab$samples$Condition)
+y.ab <- y.ab[keep,]
+summary(keep)
+
+# create design matrix
+design <- model.matrix(~ factor(Condition), y.ab$samples)
+
+# estimate the NB dipersion for each cell type
+y.ab <- estimateDisp(y.ab, design, trend="none")
+summary(y.ab$common.dispersion)
+plotBCV(y.ab, cex=1)
+
+# estimate QL dispersion for each cell type
+fit.ab <- glmQLFit(y.ab, design, robust=TRUE, abundance.trend=FALSE)
+summary(fit.ab$var.prior)
+summary(fit.ab$df.prior)
+plotQLDisp(fit.ab, cex=1)
+
+# test for differences in abundance between healthy and fibrotic tissue
+res <- glmQLFTest(fit.ab, coef=ncol(design))
+summary(decideTests(res))
+results <- topTags(res)
+write.csv(results$table, file = paste0(DA.path, "NKcell_celltype_abundance.csv"))
+
+##################
+### ENDOTHELIA ###
+##################
 
 ### create meta data data frame ###
 colData(endothelia.sce) %>% 
@@ -758,8 +828,8 @@ plotQLDisp(fit.ab, cex=1)
 # test for differences in abundance between healthy and fibrotic tissue
 res <- glmQLFTest(fit.ab, coef=ncol(design))
 summary(decideTests(res))
-topTags(res)
-write.csv(res, file = paste0(DA.path, "endothelia_celltype_abundance.csv"))
+results <- topTags(res)
+write.csv(results$table, file = paste0(DA.path, "endothelia_celltype_abundance.csv"))
 
 ##################
 ### MESENCHYME ###
