@@ -172,14 +172,23 @@ endothelia.celltype.boxplot <- ggplot(abundance.pairs, aes(x = log.ratio, y = Ce
   scale_fill_manual(values = rev(seurat.colours)) +
   stat_boxplot(geom ='errorbar') +
   geom_vline(xintercept = 0, linetype="dashed") +
-  scale_x_continuous(limits = c(-3, 3)) +
+  geom_segment(aes(x=-0.5, y=8.5, xend=-4, yend=8.5), lineend = "round", linejoin = "mitre", arrow=arrow(), size=0.2) + 
+  geom_segment(aes(x=0.5, y=8.5, xend=4, yend=8.5), arrow=arrow(), size=0.2) + 
+  scale_x_continuous(limits = c(-5, 5)) +
   theme_classic() +
-  labs(x = "log2(relative proportion of cell type\n fibrotic/healthy)", y = "Cell type") +
+  labs(x = "log2(relative proportion of cell type\n fibrotic/healthy)", y = "Cell type", title = " Increasing | Decreasing\n cell type proportion in fibrosis") +
   theme(axis.text.x = element_text(size = 12),
         axis.text.y = element_text(size = 12), 
         axis.title.x = element_text(size = 16, vjust = -1),
         axis.title.y = element_text(size = 16),
-        legend.position="none")
+        plot.title = element_text(hjust = 0.5, size = 16),
+        legend.position="none") +
+  geom_text(x = 4.5, y = 7.95, label = "***", size = 10) +
+  geom_text(x = 5, y = 6.95, label = "**", size = 10) +
+  geom_text(x = 4, y = 5.95, label = "***", size = 10) +
+  geom_text(x = 2, y = 4.95, label = "**", size = 10) +
+  geom_text(x = 4, y = 3.95, label = "***", size = 10) +
+  geom_text(x = 2, y = 1.95, label = "***", size = 10)
 png(paste0(DA.path, "celltype_boxplot.png"), width=500,height=1000,units="px")
 print(endothelia.celltype.boxplot)
 dev.off()
