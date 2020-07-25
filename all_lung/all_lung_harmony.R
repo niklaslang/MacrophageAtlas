@@ -7,6 +7,7 @@ library(dplyr)
 library(ggplot2)
 library(RColorBrewer)
 library(viridis)
+library(scales)
 library(patchwork)
 library(data.table)
 
@@ -427,3 +428,130 @@ for(d in dims){
     
   }
 }
+
+### preliminary clustering ###
+lung.harmony <- FindNeighbors(lung.harmony, reduction = "harmony_theta2", dims = 1:50)
+lung.harmony <- FindClusters(lung.harmony, reduction = "harmony_theta2", resolution = 1.3)
+# run UMAP
+lung.harmony <- RunUMAP(lung.harmony, reduction = "harmony_theta2", dims=1:50, seed.use=1)
+
+### save data ###
+saveRDS(lung.harmony, paste0(harmony.samples.path, "all_lung_harmony.rds"))
+
+# compare PTPRC expression across clusters
+umap.plot <- DimPlot(lung.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
+ptprc.plot <- VlnPlot(object = lung.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
+immunecell.markers <- FeaturePlot(lung.harmony, features = c("PTPRC"), pt.size = 0.5, ncol = 1) & 
+  scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdYlBu")))
+immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
+png(paste0(harmony.samples.path, "dim50_annotation/immuneclusters.png"), width=1800,height=1200,units="px")
+print(immuneclusters.plot)
+dev.off()
+
+## compute cluster marker genes ###
+lung.markers <- FindAllMarkers(lung.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
+lung.top50.markers <- lung.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
+write.csv(lung.markers, file = paste0(harmony.samples.path, "dim50_annotation/ALL_marker_genes.csv"))
+write.csv(lung.top50.markers, file = paste0(harmony.samples.path, "dim50_annotation/top50_marker_genes.csv"))
+
+### cell type annotation ###
+cluster.annotation <- c("Combined Lung Alveolar Macrophage 1", "Combined Lung ATII 1", "Combined Lung Ciliated 1", 
+                        "Combined Lung ATII 2", "Combined Lung Monocyte", "Combined Lung Alveolar Macrophage 2", 
+                        "Combined Lung Venous/Peribronchial Endo", "Combined Lung Goblet 1", "Combined Lung Macrophage 2",
+                        "Combined Lung CD4+ T cell", "Combined Lung Macrophage 1", "Combined Lung cDC2", 
+                        "Combined Lung CD8+ T cell", "Combined Lung Mesenchyme 1", "Combined Lung Alveolar Macrophage 3",
+                        "Combined Lung ATI", "Combined Lung NK cell", "Combined Lung Proliferating", 
+                        "Combined Lung Basal cell 1", "Combined Lung Macrophage 3", "Combined Lung Mesenchyme 2",
+                        "Combined Lung ArtEndo", "Combined Lung Alveolar Macrophage 4", "Combined Lung Ciliated 2",
+                        "Combined Lung LymphEndo", "Combined Lung CapEndo 1", "Combined Lung B cell 1",
+                        "Combined Lung Plasma cell 1", "Combined Lung Mast cell 1", "Combined Lung Ciliated 3", 
+                        "Combined Lung doublet", "Combined Lung NK/MP doublet", "Combined Lung ATII 3", 
+                        "Combined Lung Macrophage 4", "Combined Lung IFN-primed Macrophage", "Combined Lung Basal cell 2", 
+                        "Combined T cell/plasma cell doublet", "Combined Lung ATII 4", "Combined Lung pDC", 
+                        "Combined Lung Macrophage 5", "Combined Lung Plasma cell 2", "Combined Lung CapEndo 2",
+                        "Combined Lung Plasma cell 3", "Combined Lung B cell 2", "Combined Lung Mesothelia",
+                        "Combined Lung Mast cell 2", "Combined Lung Basal cell 3")
+names(cluster.annotation) <- levels(lung.harmony)
+lung.harmony <- RenameIdents(lung.harmony, cluster.annotation)
+
+# add cell types to meta data
+cell.data <- data.table(barcode = colnames(lung.harmony),
+                        celltype = Idents(lung.harmony))
+cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
+cell.data$barcode <- NULL
+lung.harmony <- AddMetaData(lung.harmony, cell.data, col.name = "celltype_integrated")
+
+# order cell type factors
+lung.harmony$celltype_integrated = factor(lung.harmony$celltype_integrated)
+lung.harmony$celltype_integrated <- factor(lung.harmony$celltype_integrated, levels(lung.harmony$celltype_integrated)[c(16, # AT I
+                                                                                                               2,4,33,38, # AT II 1-4
+                                                                                                               19,36,47, # Basal 1-3
+                                                                                                               3,24,30, # Ciliated 1-3
+                                                                                                               8, # Goblet
+                                                                                                               22, # ArtEndo
+                                                                                                               26, 42, # CapEndo 1-2
+                                                                                                               7, # Venous/Peribronchial Endo
+                                                                                                               25, # LymphEndo
+                                                                                                               14, 21, # Mesenchyme 1-2 
+                                                                                                               45, # Mesothelia
+                                                                                                               27, 44, # B cell 1-2
+                                                                                                               28,41,43, # Plasma cell 1-3
+                                                                                                               10, # CD4+ T cell
+                                                                                                               13, # CD8+ T cell
+                                                                                                               17, # NK cell 1
+                                                                                                               29, 46, # Mast cell 1-2
+                                                                                                               5, # Monocyte
+                                                                                                               11,9,20,34,40, # Macrophage 1-5
+                                                                                                               35, # IFN-primed Macrophage
+                                                                                                               1,6,15,23, # Alveolar Macrophage 1-4
+                                                                                                               12, # cDC2
+                                                                                                               39, # pDC
+                                                                                                               18, # Proliferating
+                                                                                                               31,32,37 # Doublets
+                                                                                                               )])
+
+### cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(lung.harmony),
+                        celltype = Idents(lung.harmony))
+
+lineage.annotation <- c("MP", "Epithelia", "Epithelia", "Epithelia", "MP", 
+                        "MP", "Endothelia", "Epithelia", "MP", "T cell",
+                        "MP", "MP", "T cell", "Mesenchyme", "MP",
+                        "Epithelia", "NK cell", "Proliferating", "Epithelia", "MP",
+                        "Mesenchyme", "Endothelia", "MP", "Epithelia", "Endothelia",
+                        "Endothelia", "B cell", "Plasma cell", "Mast cell", "Epithelia",
+                        "Doublet", "Doublet", "Epithelia", "MP", "MP", 
+                        "Epithelia", "Doublet", "Epithelia", "MP", "MP", 
+                        "Plasma cell", "Endothelia", "Plasma cell", "B cell", "Mesenchyme",
+                        "Mast cell", "Epithelia")
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+lung.harmony <- AddMetaData(lung.harmony, meta.data, col.name = "lineage_integrated")
+# order lineage factors
+lung.harmony$lineage_integrated = factor(lung.harmony$lineage_integrated)
+lung.harmony$lineage_integrated<- factor(lung.harmony$lineage_integrated, levels(lung.harmony$lineage_integrated)[c(4,3,6,1,9,11,8,5,7,10,2)])
+
+# 
+
+# check lineage annotation #
+lineage.table1 <- table(lung.harmony$lineage, lung.harmony$lineage_integrated)
+write.csv(lineage.table1, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_1.csv"))
+
+lineage.table2 <- table(lung.harmony$condition, lung.harmony$lineage_integrated)
+write.csv(lineage.table2, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_2.csv"))
+
+lineage.table3 <- table(lung.harmony$patient.ID, lung.harmony$lineage_integrated)
+write.csv(lineage.table3, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_3.csv"))
+
+### save data ###
+saveRDS(lung.harmony, "/home/s1987963/ds_group/Niklas/combined_organs/combined_lung_annotated.rds")
+
+### subset MPs ###
+lung.MPs <- subset(lung.harmony, subset = lineage_integrated == "MP") # 95936 cells
+
+### save MPs ###
+saveRDS(lung.harmony, "/home/s1987963/ds_group/Niklas/MP_lung/combined_lung_MPs_annotated.rds")
