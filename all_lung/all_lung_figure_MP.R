@@ -99,6 +99,9 @@ df.celltypes <- data.frame(
 m <- match(df.celltypes$Sample.ID, ei$Sample.ID)
 df.celltypes$Condition <- ei$Condition[m]
 
+### re-order celltype factor ###
+df.celltypes$Celltype <- factor(df.celltypes$Celltype, levels(df.celltypes$Celltype)[c(11,7,8,9,10,6,1,2,3,4,5,12)])
+
 # create celltype composition data table: healthy vs fibrotic
 df.MP.fibrotic <- df.celltypes[df.celltypes$Condition == "fibrotic",]
 df.MP.fibrotic$Pair.ID <- rep(1:20, each = 12)
@@ -128,7 +131,7 @@ abundance.pairs.dt[, sd := sd(log.ratio), by= Celltype]
 abundance.pairs <- data.frame(abundance.pairs.dt)
 
 # reorder celltype factors 
-abundance.pairs$Celltype <- factor(abundance.pairs$Celltype, levels(abundance.pairs$Celltype)[c(12,5,4,3,2,1,6,10,9,8,7,11)])
+abundance.pairs$Celltype <- factor(abundance.pairs$Celltype, levels(abundance.pairs$Celltype)[c(12,11,10,9,8,7,6,5,4,3,2,1)])
 
 #################
 ### DA FIGURE ###
