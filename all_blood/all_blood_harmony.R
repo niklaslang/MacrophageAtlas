@@ -387,102 +387,12 @@ for(d in dims){
 
 ### preliminary clustering ###
 blood.harmony <- FindNeighbors(blood.harmony, reduction = "harmony_theta2", dims = 1:50)
-blood.harmony <- FindClusters(blood.harmony, reduction = "harmony_theta2", resolution = 0.7)
+blood.harmony <- FindClusters(blood.harmony, reduction = "harmony_theta2", resolution = 1.0)
 # run UMAP
 blood.harmony <- RunUMAP(blood.harmony, reduction = "harmony_theta2", dims=1:50, seed.use=1)
-
-# compare PTPRC expression across clusters
-umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
-ptprc.plot <- VlnPlot(object = blood.harmony, features = c("PTPRC"), group.by = "seurat_clusters", pt.size = 0.1) + NoLegend()
-immuneclusters.plot <- umap.plot + immunecell.markers - ptprc.plot + plot_layout(ncol=1, widths=c(2,1))
-png(paste0(harmony.samples.path, "dim50_annotation/immuneclusters.png"), width=1800,height=1200,units="px")
-print(immuneclusters.plot)
-dev.off()
-
-## compute cluster marker genes ###
-blood.markers <- FindAllMarkers(blood.harmony, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25) 
-blood.top50.markers <- blood.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
-write.csv(blood.markers, file = paste0(harmony.samples.path, "dim50_annotation/ALL_marker_genes.csv"))
-write.csv(blood.top50.markers, file = paste0(harmony.samples.path, "dim50_annotation/top50_marker_genes.csv"))
-
-### cell type annotation ###
-cluster.annotation <- c("Combined Blood CD14+ Monocyte 1", "Combined Blood CD4+ T cell", "Combined Blood CD4+ CCR7+ T cell",
-                        "Combined Blood NK cell 1", "Combined Blood pDC", "Combined Blood CD16+ Monocyte", 
-                        "Combined Blood CD8+ T cell 1", "Combined Blood B cell", "Combined Blood cDC2", "Combined Blood NK cell 3",
-                        "Combined Blood CD8+ T cell 2", "Combined Blood CD14+ Monocyte 2", "Combined Blood cDC1", 
-                        "Combined Blood proliferating", "Combined Blood platelet"
-)
-names(cluster.annotation) <- levels(blood.harmony)
-blood.harmony <- RenameIdents(blood.harmony, cluster.annotation)
-# add cell types to meta data
-cell.data <- data.table(barcode = colnames(blood.harmony),
-                        celltype = Idents(blood.harmony))
-cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
-cell.data$barcode <- NULL
-blood.harmony <- AddMetaData(blood.harmony, cell.data, col.name = "celltype_integrated")
-
-# save annotated UMAP
-annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, repel = TRUE, label.size = 5, pt.size = 0.1)
-png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
-print(annotated.umap.plot)
-dev.off()
-
-### cell lineage annotation ###
-cell.data <- data.table(barcode = colnames(blood.harmony),
-                        celltype = Idents(blood.harmony))
-
-lineage.annotation <- c("MP", "T cell", "T cell", "NK cell", "MP", 
-                        "MP", "NK cell", "B cell", "MP", "NK cell", 
-                        "T cell", "MP", "MP", "Proliferating", "Platelet"
-)
-
-lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
-meta.data <- merge(cell.data, lineage.data, by = "celltype")
-meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
-meta.data$barcode <- NULL
-meta.data$celltype <- NULL
-blood.harmony <- AddMetaData(blood.harmony, meta.data, col.name = "lineage_integrated")
-
-# save annotated UMAP
-annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", group.by = "lineage_integrated", label = T, repel = TRUE, label.size = 10, pt.size = 0.1)
-png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
-print(annotated.umap.plot)
-dev.off()
-
-# check lineage annotation #
-lineage.table1 <- table(blood.harmony$lineage, blood.harmony$lineage_integrated)
-write.csv(lineage.table1, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_1.csv"))
-
-lineage.table2 <- table(blood.harmony$condition, blood.harmony$lineage_integrated)
-write.csv(lineage.table2, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_2.csv"))
-
-lineage.table3 <- table(blood.harmony$patient.ID, blood.harmony$lineage_integrated)
-write.csv(lineage.table3, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_3.csv"))
-
-### save R session ###
-save.image(file = "/home/s1987963/ds_group/Niklas/all_blood/harmonize_samples/HVGs_conditions/combined_blood_harmony.RData")
 
 ### save data ###
-saveRDS(blood.harmony, "/home/s1987963/ds_group/Niklas/combined_organs/combined_blood_annotated.rds")
-
-# add metadata for visualisation
-blood.harmony$organ <- "blood"
-cell.data <- data.table(barcode = colnames(blood.harmony),
-                        study = blood.harmony$study,
-                        cohort = blood.harmony$cohort)
-cell.data[, study := ifelse(is.na(study), "reyes_blood", paste0(study))]
-cell.data[, cohort := ifelse(is.na(cohort), "Boston", paste0(cohort))]
-cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
-cell.data$barcode <- NULL
-blood.harmony <- AddMetaData(blood.harmony, cell.data[c("study")], col.name = "study")
-blood.harmony <- AddMetaData(blood.harmony, cell.data[c("cohort")], col.name = "cohort")
-
-
-### preliminary clustering ###
-blood.harmony <- FindNeighbors(blood.harmony, reduction = "harmony_theta2", dims = 1:50)
-blood.harmony <- FindClusters(blood.harmony, reduction = "harmony_theta2", resolution = 0.7)
-# run UMAP
-blood.harmony <- RunUMAP(blood.harmony, reduction = "harmony_theta2", dims=1:50, seed.use=1)
+saveRDS(blood.harmony, paste0(harmony.samples.path, "all_blood_harmony.rds"))
 
 # compare PTPRC expression across clusters
 umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, label.size = 6, pt.size = 0.1)
@@ -499,12 +409,14 @@ write.csv(blood.markers, file = paste0(harmony.samples.path, "dim50_annotation/A
 write.csv(blood.top50.markers, file = paste0(harmony.samples.path, "dim50_annotation/top50_marker_genes.csv"))
 
 ### cell type annotation ###
-cluster.annotation <- c("Combined Blood CD14+ Monocyte 1", "Combined Blood CD4+ T cell", "Combined Blood CD4+ CCR7+ T cell",
-                        "Combined Blood NK cell 1", "Combined Blood pDC", "Combined Blood CD16+ Monocyte", 
-                        "Combined Blood CD8+ T cell 1", "Combined Blood B cell", "Combined Blood cDC2", "Combined Blood NK cell 3",
-                        "Combined Blood CD8+ T cell 2", "Combined Blood CD14+ Monocyte 2", "Combined Blood cDC1", 
-                        "Combined Blood proliferating", "Combined Blood platelet"
-)
+cluster.annotation <- c("Combined Blood CD14+ Monocyte 1", "Combined Blood CD4+ T cell 1", "Combined Blood CD4+ T cell 2",
+                        "Combined Blood CD14+ Monocyte 2", "Combined Blood NKT cell", "Combined Blood pDC 1", 
+                        "Combined Blood CD8+ T cell 1", "Combined Blood CD16+ Monocyte", "Combined Blood cDC2", 
+                        "Combined Blood NK cell 1", "Combined Blood NK cell 2", "Combined Blood B cell 1", 
+                        "Combined Blood B cell 2", "Combined Blood CD8+ T cell 2", "Combined Blood CD14+ Monocyte 3",
+                        "Combined Blood cDC1", "Combined Blood CD4+ T cell 3", "Combined Blood pDC 2",
+                        "Combined Blood Platelet", "Combined Blood Red Blood cell")
+
 names(cluster.annotation) <- levels(blood.harmony)
 blood.harmony <- RenameIdents(blood.harmony, cluster.annotation)
 # add cell types to meta data
@@ -513,9 +425,24 @@ cell.data <- data.table(barcode = colnames(blood.harmony),
 cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
 cell.data$barcode <- NULL
 blood.harmony <- AddMetaData(blood.harmony, cell.data, col.name = "celltype_integrated")
+# order cell type factors
+blood.harmony$celltype_integrated = factor(blood.harmony$celltype_integrated)
+blood.harmony$celltype_integrated <- factor(blood.harmony$celltype_integrated, levels(blood.harmony$celltype_integrated)[c(12,13, # B cells
+                                                                                                                           2,3,17, # CD4+ T cells
+                                                                                                                           7,14, #CD8+ T cells
+                                                                                                                           10,11, # NK cells
+                                                                                                                           5, # NKT cells
+                                                                                                                           1,4,15, #CD14+ Monocytes
+                                                                                                                           8, # CD16+ Monocytes
+                                                                                                                           16, # cDC1
+                                                                                                                           9, # cDC2
+                                                                                                                           6,18, #pDC
+                                                                                                                           19, # platelets
+                                                                                                                           20 # RBC
+                                                                                                                           )])
 
 # save annotated UMAP
-annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", label = T, repel = TRUE, label.size = 5, pt.size = 0.1)
+annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", group.by = "celltype_integrated", label = T, repel = TRUE, label.size = 5, pt.size = 0.1)
 png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.png"), width=1800,height=1200,units="px")
 print(annotated.umap.plot)
 dev.off()
@@ -524,10 +451,10 @@ dev.off()
 cell.data <- data.table(barcode = colnames(blood.harmony),
                         celltype = Idents(blood.harmony))
 
-lineage.annotation <- c("MP", "T cell", "T cell", "NK cell", "MP", 
-                        "MP", "NK cell", "B cell", "MP", "NK cell", 
-                        "T cell", "MP", "MP", "Proliferating", "Platelet"
-)
+lineage.annotation <- c("MP", "T cell", "T cell", "MP", "NKT cell", "MP", 
+                        "T cell", "MP", "MP", "NK cell", "NK cell", "B cell",
+                        "B cell", "T cell", "MP", "MP", "T cell", "MP", 
+                        "Platelet", "Red blood cell")
 
 lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
 meta.data <- merge(cell.data, lineage.data, by = "celltype")
@@ -535,12 +462,19 @@ meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
 meta.data$barcode <- NULL
 meta.data$celltype <- NULL
 blood.harmony <- AddMetaData(blood.harmony, meta.data, col.name = "lineage_integrated")
+# order lineage factors
+blood.harmony$lineage_integrated = factor(blood.harmony$lineage_integrated)
+blood.harmony$lineage_integrated <- factor(blood.harmony$lineage_integrated, levels(blood.harmony$lineage_integrated)[c(1,7,3,4,2,5,6)])
 
 # save annotated UMAP
 annotated.umap.plot <- DimPlot(blood.harmony, reduction = "umap", group.by = "lineage_integrated", label = T, repel = TRUE, label.size = 10, pt.size = 0.1)
 png(paste0(harmony.samples.path, "dim50_annotation/UMAP_annotated.lineage.png"), width=1800,height=1200,units="px")
 print(annotated.umap.plot)
 dev.off()
+
+# re-order condition factor #
+blood.harmony$condition = factor(blood.harmony$condition)
+blood.harmony$condition <- factor(blood.harmony$condition, levels(blood.harmony$condition)[c(2,1)])
 
 # check lineage annotation #
 lineage.table1 <- table(blood.harmony$lineage, blood.harmony$lineage_integrated)
@@ -552,8 +486,11 @@ write.csv(lineage.table2, file = paste0(harmony.samples.path, "dim50_annotation/
 lineage.table3 <- table(blood.harmony$patient.ID, blood.harmony$lineage_integrated)
 write.csv(lineage.table3, file = paste0(harmony.samples.path, "dim50_annotation/lineage_table_3.csv"))
 
-### save R session ###
-save.image(file = "/home/s1987963/ds_group/Niklas/all_blood/harmonize_samples/HVGs_conditions/combined_blood_harmony.RData")
+### subset MPs ###
+blood.MPs <- subset(blood.harmony, subset = lineage_integrated == "MP") # 33600 cells
+
+### save MPs ###
+saveRDS(blood.MPs, "/home/s1987963/ds_group/Niklas/combined_MPs/combined_blood_MPs_annotated.rds")
 
 ### save data ###
 saveRDS(blood.harmony, "/home/s1987963/ds_group/Niklas/combined_organs/combined_blood_annotated.rds")
