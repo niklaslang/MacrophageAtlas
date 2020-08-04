@@ -161,7 +161,9 @@ monocyte.plot2 <- EnhancedVolcano(top.genes$table,
                                                    'p-value & logFC'),
                                     legendPosition = 'right',
                                     legendLabSize = 10,
-                                    legendIconSize = 2.0)
+                                    legendIconSize = 2.0,
+                                    gridlines.major = FALSE,
+                                    gridlines.minor = FALSE)
 png(paste0(DE.path, "kidney_monocyte_volcano_2.png"), width=1200,height=800,units="px")
 print(monocyte.plot2)
 dev.off()
@@ -281,7 +283,9 @@ macrophage.plot2 <- EnhancedVolcano(top.genes$table,
                                'p-value & logFC'),
                 legendPosition = 'right',
                 legendLabSize = 10,
-                legendIconSize = 2.0)
+                legendIconSize = 2.0,
+                gridlines.major = FALSE,
+                gridlines.minor = FALSE)
 png(paste0(DE.path, "kidney_macrophages_volcano_2.png"), width=1200,height=800,units="px")
 print(macrophage.plot2)
 dev.off()
