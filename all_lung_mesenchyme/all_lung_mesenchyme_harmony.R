@@ -279,3 +279,58 @@ mesenchyme.markers <- FindAllMarkers(mesenchyme.harmony, only.pos = TRUE, min.pc
 mesenchyme.top50.markers <- mesenchyme.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
 write.csv(mesenchyme.markers, file = paste0(harmony.samples.path, "dim50_annotation/ALL_marker_genes.csv"))
 write.csv(mesenchyme.top50.markers, file = paste0(harmony.samples.path, "dim50_annotation/top50_marker_genes.csv"))
+
+### celltype annotation ###
+cluster.annotation <- c("SMC", 
+                        "Adventitial Fibroblast", 
+                        "Lipofibroblasts OR Alveolar fibroblast", 
+                        "Inflammatory Fibroblast", 
+                        "Myofibroblast 1", 
+                        "Pericyte", 
+                        "Low quality cell", 
+                        "Fibroblast 4", 
+                        "Activated Pericyte", 
+                        "Mesothelium", 
+                        "Doublet (Macrophage/Mesenchyme)",
+                        "Doublet (Mes/Epithelia) 1", 
+                        "Doublet (Mes/Endothelia)", 
+                        "Myofibroblast 2", 
+                        "Myofibroblast 3", 
+                        "Doublet (NK/Mes)", 
+                        "Doublet (Mes/Epithelia) 2",
+                        "Doublet (Ciliated/Mes)", 
+                        "Proliferating")
+
+names(cluster.annotation) <- levels(mesenchyme.harmony)
+mesenchyme.harmony <- RenameIdents(mesenchyme.harmony, cluster.annotation)
+
+### add cell types to meta data ###
+cell.data <- data.table(barcode = colnames(mesenchyme.harmony),
+                        celltype = Idents(mesenchyme.harmony))
+cell.data <- data.frame(cell.data, row.names = cell.data$barcode)
+cell.data$barcode <- NULL
+mesenchyme.harmony <- AddMetaData(mesenchyme.harmony, cell.data, col.name = "mesenchyme_celltype")
+
+### add cell lineage annotation ###
+cell.data <- data.table(barcode = colnames(mesenchyme.harmony),
+                        celltype = Idents(mesenchyme.harmony))
+
+lineage.annotation <- c("Mesenchyme", "Mesenchyme", "Mesenchyme", "Mesenchyme", "Mesenchyme", "Mesenchyme", 
+                        "Low Quality Cell",
+                        "Mesenchyme", "Mesenchyme", "Mesenchyme",
+                        "Doublet", "Doublet", "Doublet", 
+                        "Mesenchyme", "Mesenchyme",
+                        "Doublet", "Doublet", "Doublet")
+
+lineage.data <- data.table(celltype = cluster.annotation, lineage = lineage.annotation)
+meta.data <- merge(cell.data, lineage.data, by = "celltype")
+meta.data <- data.frame(meta.data, row.names = meta.data$barcode)
+meta.data$barcode <- NULL
+meta.data$celltype <- NULL
+mesenchyme.harmony <- AddMetaData(mesenchyme.harmony, meta.data, col.name = "lineage_integrated")
+
+### subset data (uncomment if required/desired) ###
+mesenchyme.harmony <- subset(mesenchyme.harmony, subset = lineage_integrated == "Mesenchyme")
+
+### save data ###
+saveRDS(mesenchyme.harmony, "/home/s1987963/ds_group/Niklas/combined_mesenchyme/combined_lung_mesenchyme_subclustered_annotated.rds")
