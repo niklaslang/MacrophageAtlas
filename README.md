@@ -1,5 +1,5 @@
 # A Human Macrophage Atlas in Homeostasis and Fibrosis
-GitHub repository accompanying my MSc dissertation with Prakash Ramachandran, Centre for Inflammation Research @ University Of Edinburgh, Summer 2020.
+GitHub repository accompanying my MSc dissertation with Prakash Ramachandran (@RamachandranLab), Centre for Inflammation Research @ University Of Edinburgh, Summer 2020.
 
 ## Overview 
 
